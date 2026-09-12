@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { api } from '../services/api'
-import { openPaystack, paystackKey } from '../services/payment'
+import { openPaystack } from '../services/payment'
 import { currency, isActivePayment } from '../utils/format'
 import { toast } from '../services/toast'
 import StatusPill from '../components/StatusPill.vue'
@@ -54,12 +54,7 @@ const resumePayment = async (order) => {
   try {
     const initReq = await api.initPayment(order.reference, null)
     const payment = initReq.payment || {}
-    await openPaystack({
-      key: paystackKey(),
-      email: `${order.reference.toLowerCase()}@datapadi.gh`,
-      amount: payment.amount ?? order.amount,
-      reference: payment.reference || order.reference,
-    })
+    await openPaystack({ accessCode: payment.access_code })
     toast('Payment sent — checking your order…', 'info')
     await runLookup(order.reference)
   } catch (err) {

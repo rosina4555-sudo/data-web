@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { api } from '../services/api'
-import { openPaystack, paystackKey, paystackConfigured } from '../services/payment'
+import { openPaystack } from '../services/payment'
 import { currency } from '../utils/format'
 import { isValidGhanaPhone, networkForPrefix, normalizePhone, phoneHint } from '../utils/phone'
 import { toast } from '../services/toast'
@@ -19,6 +19,7 @@ const email = ref('')
 const step = ref('form') // form | paying | awaiting | done | error
 const order = ref(null)
 const error = ref('')
+const verifying = ref(false) // popup finished, polling order status
 
 const amount = computed(() => Number(props.pkg.sell_price || 0))
 const networkGood = computed(() => {
@@ -84,11 +85,13 @@ const pollUntilSettled = async () => {
     }
     if (Date.now() >= deadline) {
       stopPolling()
+      verifying.value = false
       step.value = 'awaiting'
+      toast('We received your payment but the confirmation is taking long. Track your order for the latest status.', 'info')
     }
   }
   await tick()
-  if (!pollTimer) {
+  if (!pollTimer && !closed) {
     pollTimer = setInterval(tick, 2500)
   }
 }
@@ -111,11 +114,13 @@ const buy = async () => {
 
     try {
       await openPaystack({
-        key: paystackKey(),
-        email: email.value || `${ref.toLowerCase()}@datapadi.gh`,
-        amount: payment.amount ?? amount.value,
-        reference: payment.reference || ref,
+        accessCode: payment.access_code,
+        onClose: () => {
+          toast('Payment window closed. Your order is still open.', 'info')
+          step.value = 'form'
+        },
       })
+      verifying.value = true
     } catch (payErr) {
       if (payErr?.message === 'Payment cancelled') {
         toast('Payment cancelled. Your order is still open.', 'info')
@@ -225,13 +230,20 @@ onMounted(() => {
             <p class="text-sm font-semibold text-brand-dark">Preparing your order…</p>
           </div>
 
-          <!-- STEP: awaiting (popup hint) -->
+          <!-- STEP: awaiting (popup hint / verifying) -->
           <div v-else-if="step === 'awaiting'" class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-            <div class="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft">
+            <div v-if="verifying" class="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft">
+              <div class="h-7 w-7 animate-spin rounded-full border-4 border-brand/15 border-t-brand"></div>
+            </div>
+            <div v-else class="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft">
               <svg class="h-7 w-7 animate-pulse text-accent-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
-            <p class="font-heading text-base font-bold text-brand-dark">Complete payment to confirm your order</p>
-            <p class="max-w-[16rem] text-xs leading-relaxed text-muted">
+            <p v-if="verifying" class="font-heading text-base font-bold text-brand-dark">Verifying your payment…</p>
+            <p v-else class="font-heading text-base font-bold text-brand-dark">Complete payment to confirm your order</p>
+            <p v-if="verifying" class="max-w-[16rem] text-xs leading-relaxed text-muted">
+              Confirming your transaction with Paystack. This usually takes a few seconds — we'll show your receipt when it's done.
+            </p>
+            <p v-else class="max-w-[16rem] text-xs leading-relaxed text-muted">
               If the payment window closed, your order stays open — use <b>Track order</b> to pay again.
             </p>
           </div>

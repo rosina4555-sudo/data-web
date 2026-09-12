@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue'
 import { adminApi } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
 import { toast } from '../../services/toast'
+import Pagination from './Pagination.vue'
 
 const rows = ref([])
+const meta = ref({ current_page: 1, last_page: 1, total: 0 })
 const ppRows = ref([])
 const loading = ref(true)
 const loadError = ref('')
@@ -15,10 +17,11 @@ const load = async () => {
   loadError.value = ''
   try {
     const [prov, pp] = await Promise.all([
-      adminApi.getProviders({ per_page: 100 }),
+      adminApi.getProviders({ page: meta.value.current_page, per_page: 20 }),
       adminApi.getProviderPackages({ per_page: 300 }),
     ])
     rows.value = prov.data || []
+    meta.value = prov.meta || meta.value
     ppRows.value = pp.data || []
   } catch (err) {
     loadError.value = err?.message || 'Failed to load providers.'
@@ -26,6 +29,11 @@ const load = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const page = (p) => {
+  meta.value.current_page = p
+  load()
 }
 
 const sync = async (p) => {
@@ -51,7 +59,7 @@ onMounted(load)
   <div class="space-y-4">
     <div>
       <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Providers</h1>
-      <p class="text-xs font-medium text-muted">{{ rows.length }} gateways · {{ ppRows.length }} synced bundles</p>
+      <p class="text-xs font-medium text-muted">{{ meta.total }} gateways · {{ ppRows.length }} synced bundles</p>
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-16">
@@ -109,5 +117,7 @@ onMounted(load)
       <p class="font-heading text-base font-bold text-brand-dark/70">No providers yet</p>
       <p class="mt-1 text-sm text-muted">Add a provider from the backend seed CLI.</p>
     </div>
+
+    <Pagination :page="meta.current_page" :total-pages="meta.last_page" :total="meta.total" @update:page="page" />
   </div>
 </template>

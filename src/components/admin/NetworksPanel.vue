@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue'
 import { adminApi } from '../../services/api'
 import { formatDate } from '../../utils/format'
 import { toast } from '../../services/toast'
+import Pagination from './Pagination.vue'
 
 const rows = ref([])
+const meta = ref({ current_page: 1, last_page: 1, total: 0 })
 const loading = ref(true)
 const loadError = ref('')
 const editing = ref(null) // { mode:'create'|'edit', id?, code, name, is_active }
@@ -14,14 +16,20 @@ const load = async () => {
   loading.value = true
   loadError.value = ''
   try {
-    const res = await adminApi.getNetworks({ per_page: 100 })
+    const res = await adminApi.getNetworks({ page: meta.value.current_page, per_page: 12 })
     rows.value = res.data || []
+    meta.value = res.meta || meta.value
   } catch (err) {
     loadError.value = err?.message || 'Failed to load networks.'
     toast(loadError.value, 'error')
   } finally {
     loading.value = false
   }
+}
+
+const page = (p) => {
+  meta.value.current_page = p
+  load()
 }
 
 const fresh = () => ({ mode: 'create', code: '', name: '', is_active: true })
@@ -83,7 +91,7 @@ onMounted(load)
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Networks</h1>
-        <p class="text-xs font-medium text-muted">{{ rows.length }} networks</p>
+        <p class="text-xs font-medium text-muted">{{ meta.total }} networks</p>
       </div>
       <button type="button" class="clay-btn rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2 text-xs font-extrabold text-white transition" @click="startCreate">+ Add network</button>
     </div>
@@ -141,5 +149,7 @@ onMounted(load)
       <p class="font-heading text-base font-bold text-brand-dark/70">No networks yet</p>
       <p class="mt-1 text-sm text-muted">Create your first network (e.g. MTN).</p>
     </div>
+
+    <Pagination :page="meta.current_page" :total-pages="meta.last_page" :total="meta.total" @update:page="page" />
   </div>
 </template>

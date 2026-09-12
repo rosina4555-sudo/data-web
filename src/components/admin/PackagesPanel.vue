@@ -3,8 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { adminApi } from '../../services/api'
 import { currency, formatDate } from '../../utils/format'
 import { toast } from '../../services/toast'
+import Pagination from './Pagination.vue'
 
 const rows = ref([])
+const meta = ref({ current_page: 1, last_page: 1, total: 0 })
 const networks = ref([])
 const providerPackages = ref([])
 const loading = ref(true)
@@ -17,13 +19,15 @@ const load = async () => {
   loading.value = true
   loadError.value = ''
   try {
-    const params = networkFilter.value ? { network_id: networkFilter.value, per_page: 100 } : { per_page: 100 }
+    const params = { page: meta.value.current_page, per_page: 20 }
+    if (networkFilter.value) params.network_id = networkFilter.value
     const [pkgRes, netRes, ppRes] = await Promise.all([
       adminApi.getPackages(params),
       adminApi.getNetworks({ per_page: 100 }),
-      adminApi.getProviderPackages({ per_page: 100 }),
+      adminApi.getProviderPackages({ per_page: 500 }),
     ])
     rows.value = pkgRes.data || []
+    meta.value = pkgRes.meta || meta.value
     networks.value = netRes.data || []
     providerPackages.value = ppRes.data || []
   } catch (err) {
@@ -32,6 +36,11 @@ const load = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const page = (p) => {
+  meta.value.current_page = p
+  load()
 }
 
 const fresh = () => ({ mode: 'create', network_id: '', provider_package_id: '', name: '', sell_price: '', sort_order: 0, is_active: true })
@@ -95,7 +104,8 @@ const toggle = async (p) => {
 }
 
 const changeNetworkFilter = () => {
-  networkFilter.value ? load() : load()
+  meta.value = { current_page: 1, last_page: 1, total: 0 }
+  load()
 }
 
 onMounted(load)
@@ -106,7 +116,7 @@ onMounted(load)
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Bundles</h1>
-        <p class="text-xs font-medium text-muted">{{ rows.length }} listed</p>
+        <p class="text-xs font-medium text-muted">{{ meta.total }} listed</p>
       </div>
       <div class="flex items-center gap-2">
         <select v-model="networkFilter" class="clay-well rounded-xl bg-surface px-3 py-2 text-xs font-semibold text-brand-dark outline-none" @change="changeNetworkFilter">
@@ -196,5 +206,7 @@ onMounted(load)
       <p class="font-heading text-base font-bold text-brand-dark/70">No bundles{{ networkFilter ? ' for this network' : '' }}</p>
       <p class="mt-1 text-sm text-muted">Add your first bundle to start selling.</p>
     </div>
+
+    <Pagination :page="meta.current_page" :total-pages="meta.last_page" :total="meta.total" @update:page="page" />
   </div>
 </template>

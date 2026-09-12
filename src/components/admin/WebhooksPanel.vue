@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { adminApi } from '../../services/api'
-import { formatDateTime, timeAgo } from '../../utils/format'
+import { currency, formatDateTime, timeAgo } from '../../utils/format'
 import { toast } from '../../services/toast'
 import Pagination from './Pagination.vue'
 
@@ -47,6 +47,8 @@ const pretty = (row) => {
     return String(row.payload || '')
   }
 }
+
+const money = (s) => (s && s.amount != null ? currency(s.amount) : '—')
 
 const expand = (row) => (expanded.value = expanded.value === row.id ? null : row.id)
 
@@ -109,20 +111,33 @@ onMounted(load)
             <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
               <th class="px-4 py-3">Source</th>
               <th class="px-4 py-3">Event</th>
+              <th class="px-4 py-3">Order · Initiator</th>
+              <th class="px-4 py-3">Tx ref</th>
+              <th class="px-4 py-3">Amount</th>
               <th class="px-4 py-3">Result</th>
-              <th class="px-4 py-3">Message</th>
               <th class="px-4 py-3">Received</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in rows" :key="r.id" class="border-b border-brand/5 transition hover:bg-brand-soft/40">
-              <td class="px-4 py-3"><span class="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-extrabold text-brand uppercase">{{ r.source }}</span></td>
+              <td class="px-4 py-3">
+                <span class="rounded bg-brand-soft px-1.5 py-0.5 text-[10px] font-extrabold text-brand uppercase" :title="r.source === 'paystack' ? 'Payment gateway event' : 'Data provider event'">{{ r.source }}</span>
+              </td>
               <td class="px-4 py-3 font-mono font-semibold text-brand-dark">{{ r.event_type || '—' }}</td>
               <td class="px-4 py-3">
-                <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="r.processed_ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'">{{ r.processed_ok ? 'OK' : 'Error' }}</span>
+                <p class="font-semibold text-brand-dark">{{ r.summary.order_reference || '—' }}</p>
+                <p class="text-muted">☎ {{ r.summary.phone || '—' }}</p>
               </td>
-              <td class="max-w-[16rem] truncate px-4 py-3 text-muted">{{ r.error_message || '—' }}</td>
+              <td class="px-4 py-3 font-mono text-muted">{{ r.summary.reference || '—' }}</td>
+              <td class="px-4 py-3">
+                <p class="font-heading font-black text-brand">{{ money(r.summary) }}</p>
+                <p v-if="r.summary.channel" class="text-[10px] text-muted">{{ r.summary.channel }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="r.processed_ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'">{{ r.processed_ok ? 'OK' : 'Error' }}</span>
+                <p v-if="r.summary.response" class="mt-0.5 text-[10px] text-muted" :title="r.error_message || ''">{{ r.summary.response }}</p>
+              </td>
               <td class="px-4 py-3 text-muted">{{ formatDateTime(r.created_at) }} · {{ timeAgo(r.created_at) }}</td>
               <td class="px-4 py-3">
                 <button type="button" class="rounded-lg bg-brand-soft px-2.5 py-1 text-[10px] font-bold text-brand transition hover:bg-brand/10" @click="expand(r)">{{ expanded === r.id ? 'Hide' : 'View' }}</button>
@@ -142,6 +157,13 @@ onMounted(load)
                 <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="r.processed_ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'">{{ r.processed_ok ? 'OK' : 'Error' }}</span>
               </div>
               <p class="mt-1 font-mono text-xs font-semibold break-words text-brand-dark">{{ r.event_type || '—' }}</p>
+              <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted">
+                <span class="font-semibold text-brand-dark">{{ r.summary.order_reference || '—' }}</span>
+                <span>☎ {{ r.summary.phone || '—' }}</span>
+                <span class="font-heading font-black text-brand">{{ money(r.summary) }}</span>
+                <span v-if="r.summary.channel">{{ r.summary.channel }}</span>
+              </div>
+              <p class="mt-0.5 font-mono text-[10px] text-muted">{{ r.summary.reference || '—' }}</p>
               <p class="mt-0.5 text-[11px] text-muted">{{ timeAgo(r.created_at) }}</p>
             </div>
             <span class="shrink-0 text-[10px] font-bold text-brand">{{ expanded === r.id ? 'Hide' : 'View' }}</span>

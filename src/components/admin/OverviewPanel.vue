@@ -124,10 +124,10 @@ const avgDelivery = computed(() => {
     <template v-else>
       <!-- KPIs -->
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <KpiCard label="Revenue" :value="Number(ov.revenue || 0).toLocaleString('en-GH', { maximumFractionDigits: 0 })" prefix="₵" />
-        <KpiCard label="GMV (orders)" :value="Number(ov.gmv || 0).toLocaleString('en-GH', { maximumFractionDigits: 0 })" prefix="₵" />
+        <KpiCard label="Revenue" :value="currency(ov.revenue)" />
+        <KpiCard label="GMV (orders)" :value="currency(ov.gmv)" />
         <KpiCard label="Orders" :value="ov.orders || 0" :suffix="' · ' + (ov.success_rate ?? 0) + '% ok'" />
-        <KpiCard label="Profit" :value="Number(ov.profit || 0).toLocaleString('en-GH', { maximumFractionDigits: 0 })" prefix="₵" />
+        <KpiCard label="Profit" :value="currency(ov.profit)" />
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2 lg:gap-5">

@@ -8,7 +8,7 @@ export const SITE = {
   heroSub:
     'MTN, AirtelTigo & Telecel bundles for every budget. Pay with mobile money or card and get connected in seconds.',
   supportEmail: 'support@datapadi.com',
-  supportPhone: '+233 20 000 0000',
+  supportPhone: '+233 55 637 3440',
   copyright: '© 2026 DataPadi · Instant data bundles in Ghana',
   networksServed: 'MTN · AirtelTigo · Telecel',
 }

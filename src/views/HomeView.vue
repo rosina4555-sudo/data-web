@@ -22,8 +22,9 @@ const loading = ref(true)
 const loadError = ref('')
 
 // Refund-policy popup (shown on visit, dismissible). Key is versioned so past
-// dismissals of the old inline banner never hide this one.
-const REFUND_POLICY_URL = 'https://support.paystack.com/en/articles/2127106'
+// dismissals of the old inline banner never hide this one. Links to Paystack's
+// official customer-facing guide for failed payments.
+const REFUND_POLICY_URL = 'https://support.paystack.com/en/articles/2127938'
 const REFUND_NOTICE_KEY = 'dp_refund_banner_v2'
 const noticeDismissed = ref(
   typeof localStorage !== 'undefined' && localStorage.getItem(REFUND_NOTICE_KEY) === '1',
@@ -263,7 +264,7 @@ const priceSummary = computed(() => {
               rel="noopener noreferrer"
               class="clay-btn-light mt-3 inline-flex items-center rounded-xl bg-surface px-3.5 py-2 text-xs font-extrabold whitespace-nowrap text-brand"
             >
-              Read Paystack's refund policy ↗
+              How Paystack handles failed payments ↗
             </a>
           </div>
         </section>

@@ -21,12 +21,17 @@ const checkout = ref(null) // { network, pkg }
 const loading = ref(true)
 const loadError = ref('')
 
-// Refund-policy notice (shown on first visit, dismissible)
+// Refund-policy popup (shown on visit, dismissible). Key is versioned so past
+// dismissals of the old inline banner never hide this one.
 const REFUND_POLICY_URL = 'https://support.paystack.com/en/articles/2127106'
-const REFUND_NOTICE_KEY = 'dp_refund_notice_dismissed'
+const REFUND_NOTICE_KEY = 'dp_refund_banner_v2'
 const noticeDismissed = ref(
   typeof localStorage !== 'undefined' && localStorage.getItem(REFUND_NOTICE_KEY) === '1',
 )
+const noticeVisible = ref(false)
+setTimeout(() => {
+  noticeVisible.value = true
+}, 500)
 const dismissNotice = () => {
   noticeDismissed.value = true
   try {
@@ -209,65 +214,60 @@ const priceSummary = computed(() => {
         </div>
       </section>
 
-      <!-- Refund guarantee notice -->
-      <section v-if="!noticeDismissed" class="mt-5 sm:mt-8">
-        <div class="clay relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent px-5 py-5 text-white sm:px-7 sm:py-6">
-          <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#ffffff30,transparent_55%)]"></div>
-          <div class="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-white/10 blur-2xl"></div>
-          <div class="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-accent/25 blur-2xl"></div>
+      <!-- Refund guarantee popup -->
+      <Transition name="dp-pop">
+        <section v-if="!noticeDismissed && noticeVisible" class="pointer-events-none fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[27rem]">
+          <div class="clay pointer-events-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent p-4 pr-10 text-white shadow-2xl shadow-brand-dark/50 sm:p-5 sm:pr-11">
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#ffffff2e,transparent_55%)]"></div>
+            <div class="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
 
-          <button
-            type="button"
-            aria-label="Dismiss refund notice"
-            class="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white transition hover:bg-white/25"
-            @click="dismissNotice"
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
+            <button
+              type="button"
+              aria-label="Dismiss refund notice"
+              class="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 text-white transition hover:bg-white/25"
+              @click="dismissNotice"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
 
-          <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <span class="clay-sm flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 sm:h-14 sm:w-14">
-              <svg class="h-6 w-6 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-            </span>
-
-            <div class="min-w-0 flex-1">
-              <p class="font-heading text-base font-bold tracking-tight sm:text-lg lg:text-xl">Refund guarantee</p>
-              <p class="mt-1 text-sm leading-relaxed text-white/85 sm:text-base">
-                Your data is delivered in seconds. If an order ever fails, we refund you automatically through Paystack.
-              </p>
-              <ul class="mt-2.5 grid gap-x-5 gap-y-2 text-[13px] font-semibold text-white/95 sm:grid-cols-2 sm:text-sm">
-                <li class="flex items-center gap-2">
-                  <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15">
-                    <svg class="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
-                  Instant delivery. Bundles top up in seconds
-                </li>
-                <li class="flex items-center gap-2">
-                  <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15">
-                    <svg class="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
-                  Only unverified numbers fail, and they get refunded
-                </li>
-                <li class="flex items-center gap-2 sm:col-span-2">
-                  <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15">
-                    <svg class="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  </span>
-                  Money goes straight back to your card or mobile money
-                </li>
-              </ul>
+            <div class="flex items-start gap-3">
+              <span class="clay-sm flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                <svg class="h-5.5 w-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </span>
+              <div class="min-w-0">
+                <p class="font-heading text-sm font-bold tracking-tight sm:text-base">Refund guarantee</p>
+                <p class="mt-0.5 text-xs leading-relaxed text-white/85 sm:text-sm">
+                  If an order ever fails, we refund you automatically through Paystack.
+                </p>
+              </div>
             </div>
+
+            <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-semibold text-white/95 sm:text-xs">
+              <li class="flex items-center gap-1.5">
+                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <svg class="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                Instant delivery
+              </li>
+              <li class="flex items-center gap-1.5">
+                <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/15">
+                  <svg class="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                Only unverified numbers fail
+              </li>
+            </ul>
 
             <a
               :href="REFUND_POLICY_URL"
               target="_blank"
               rel="noopener noreferrer"
-              class="clay-btn-light self-start shrink-0 rounded-xl bg-surface px-4 py-2.5 text-center text-sm font-extrabold whitespace-nowrap text-brand sm:self-auto"
+              class="clay-btn-light mt-3 inline-flex items-center rounded-xl bg-surface px-3.5 py-2 text-xs font-extrabold whitespace-nowrap text-brand"
             >
               Read Paystack's refund policy ↗
             </a>
           </div>
-        </div>
-      </section>
+        </section>
+      </Transition>
 
       <!-- Loading / error for networks -->
       <section v-if="loading" class="mt-6 sm:mt-10">

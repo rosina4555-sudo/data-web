@@ -160,6 +160,10 @@ export const adminApi = {
     request('POST', '/v1/admin/refunds', { order_id: orderId, reason }),
   refundOrdersBulk: (orderIds, reason = '') =>
     request('POST', '/v1/admin/refunds/bulk', { order_ids: orderIds, reason }),
+  getRefundHistory: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/refunds/history${qs ? '?' + qs : ''}`)
+  },
 
   // Webhook events
   getWebhookEvents: (params = {}) => {

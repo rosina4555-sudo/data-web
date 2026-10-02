@@ -59,6 +59,7 @@ export const statusMeta = (status) =>
 
 /** Customer-refund lifecycle (refunds table status). */
 export const REFUND_META = {
+  pending: { label: 'Pending', cls: 'bg-slate-100 text-slate-500' },
   processing: { label: 'Refunding', cls: 'bg-amber-50 text-amber-700' },
   refunded: { label: 'Refunded', cls: 'bg-emerald-50 text-emerald-700' },
   failed: { label: 'Refund failed', cls: 'bg-red-50 text-red-600' },

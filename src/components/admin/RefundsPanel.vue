@@ -14,6 +14,13 @@ const selected = ref(new Set())
 
 const modal = ref({ open: false, reason: '', busy: false })
 
+const historyRows = ref([])
+const historyMeta = ref({ current_page: 1, last_page: 1, total: 0 })
+const historyLoading = ref(false)
+const historyError = ref('')
+const histFilter = ref('')
+const counts = ref({ awaiting: 0, processing: 0, refunded: 0, failed: 0 })
+
 const loadCore = async () => {
   loading.value = true
   loadError.value = ''
@@ -25,12 +32,42 @@ const loadCore = async () => {
     const res = await adminApi.getRefunds(params)
     rows.value = res.data || []
     meta.value = res.meta || meta.value
+    counts.value = res.counts || counts.value
   } catch (err) {
     loadError.value = err?.message || 'Failed to load refunds.'
     toast(loadError.value, 'error')
   } finally {
     loading.value = false
   }
+}
+
+const loadHistory = async () => {
+  historyLoading.value = true
+  historyError.value = ''
+  const params = { page: historyMeta.value.current_page, per_page: 15 }
+  if (histFilter.value) params.status = histFilter.value
+  try {
+    const res = await adminApi.getRefundHistory(params)
+    historyRows.value = res.data || []
+    historyMeta.value = res.meta || historyMeta.value
+    counts.value = res.counts || counts.value
+  } catch (err) {
+    historyError.value = err?.message || 'Failed to load refund history.'
+    toast(historyError.value, 'error')
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+const historyPage = (p) => {
+  historyMeta.value.current_page = p
+  loadHistory()
+}
+
+const selectHistoryFilter = (status) => {
+  histFilter.value = status
+  historyMeta.value = { current_page: 1, last_page: 1, total: 0 }
+  loadHistory()
 }
 
 const applyFilters = () => {
@@ -106,6 +143,7 @@ const confirmRefund = async () => {
     modal.value.open = false
     selected.value = new Set()
     await loadCore()
+    loadHistory()
   } catch (err) {
     toast(err?.message || 'Refund failed.', 'error')
   } finally {
@@ -113,7 +151,10 @@ const confirmRefund = async () => {
   }
 }
 
-onMounted(loadCore)
+onMounted(() => {
+  loadCore()
+  loadHistory()
+})
 </script>
 
 <template>
@@ -121,7 +162,7 @@ onMounted(loadCore)
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Refunds</h1>
-        <p class="text-xs font-medium text-muted">{{ meta.total }} awaiting refund</p>
+        <p class="text-xs font-medium text-muted">{{ counts.awaiting }} awaiting refund</p>
       </div>
       <div class="flex items-center gap-2">
         <button
@@ -268,6 +309,102 @@ onMounted(loadCore)
 
       <Pagination :page="meta.current_page" :total-pages="meta.last_page" :total="meta.total" @update:page="page" />
     </template>
+
+    <!-- Refund history (status tracking) -->
+    <section class="mt-8 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-heading text-sm font-bold tracking-tight text-brand-dark">Refund history</h2>
+          <p class="text-xs font-medium text-muted">Every refund request and its current status.</p>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="opt in [{ value: '', label: `All (${counts.pending + counts.processing + counts.refunded + counts.failed})` }, { value: 'pending', label: `Pending (${counts.pending})` }, { value: 'processing', label: `Refunding (${counts.processing})` }, { value: 'refunded', label: `Refunded (${counts.refunded})` }, { value: 'failed', label: `Failed (${counts.failed})` }]"
+            :key="opt.value"
+            type="button"
+            class="rounded-xl px-3 py-1.5 text-[11px] font-extrabold transition"
+            :class="histFilter === opt.value ? 'bg-gradient-to-r from-brand to-brand-dark text-white' : 'bg-surface text-muted hover:text-brand'"
+            @click="selectHistoryFilter(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="historyLoading" class="flex items-center justify-center py-12">
+        <div class="h-7 w-7 animate-spin rounded-full border-4 border-brand/15 border-t-brand"></div>
+      </div>
+
+      <div v-else-if="historyError" class="clay flex items-center justify-center gap-3 rounded-3xl bg-surface py-8 text-center">
+        <p class="text-sm font-semibold text-red-600">{{ historyError }}</p>
+        <button type="button" class="rounded-xl bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100" @click="loadHistory">Retry</button>
+      </div>
+
+      <template v-else>
+        <div v-if="!historyRows.length" class="clay rounded-3xl bg-surface py-10 text-center">
+          <p class="font-heading text-sm font-bold text-brand-dark/70">No refunds {{ histFilter ? 'with this status' : 'yet' }}</p>
+          <p class="mt-1 text-xs text-muted">Refunds you process will show up here.</p>
+        </div>
+
+        <div v-if="historyRows.length" class="clay hidden overflow-hidden rounded-3xl bg-surface lg:block">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                <th class="px-4 py-3">Order</th>
+                <th class="px-4 py-3">Bundle</th>
+                <th class="px-4 py-3">Phone</th>
+                <th class="px-4 py-3 text-right">Amount</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Refund ref</th>
+                <th class="px-4 py-3">Initiated</th>
+                <th class="px-4 py-3">Resolved</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in historyRows" :key="r.id" class="border-b border-brand/5 transition hover:bg-brand-soft/40">
+                <td class="px-4 py-3">
+                  <p class="font-mono font-bold text-brand">{{ r.order_ref }}</p>
+                  <p v-if="r.reason" class="text-[10px] text-muted">{{ r.reason }}</p>
+                </td>
+                <td class="px-4 py-3 font-semibold text-brand-dark">{{ r.package }}{{ r.network ? ` · ${r.network}` : '' }}</td>
+                <td class="px-4 py-3 font-medium text-brand-dark/70">{{ r.phone }}</td>
+                <td class="px-4 py-3 text-right font-heading font-black text-brand">{{ currency(r.amount) }}</td>
+                <td class="px-4 py-3">
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap" :class="refundMeta(r.status).cls">
+                    {{ refundMeta(r.status).label }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 font-mono text-[10px] text-brand-dark/60">
+                  <p v-if="r.paystack_refund_ref">{{ r.paystack_refund_ref }}</p>
+                  <p v-else class="text-muted/60">—</p>
+                </td>
+                <td class="px-4 py-3 text-muted">{{ formatDateTime(r.initiated_at || r.created_at) }}</td>
+                <td class="px-4 py-3 text-muted">{{ r.refunded_at ? formatDateTime(r.refunded_at) : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ul v-if="historyRows.length" class="space-y-3 lg:hidden">
+          <li v-for="r in historyRows" :key="r.id" class="clay rounded-3xl bg-surface p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-mono text-[11px] font-bold text-brand">{{ r.order_ref }}</p>
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="refundMeta(r.status).cls">{{ refundMeta(r.status).label }}</span>
+                </div>
+                <p class="mt-1 truncate font-heading text-sm font-bold text-brand-dark">{{ r.package }}</p>
+                <p class="mt-0.5 text-xs text-muted">{{ r.phone }} · {{ currency(r.amount) }}</p>
+                <p v-if="r.paystack_refund_ref" class="mt-1 truncate font-mono text-[10px] text-brand-dark/60">{{ r.paystack_refund_ref }}</p>
+                <p class="mt-1 text-[10px] text-muted">{{ formatDateTime(r.initiated_at || r.created_at) }}</p>
+              </div>
+            </div>
+          </li>
+        </ul>
+
+        <Pagination :page="historyMeta.current_page" :total-pages="historyMeta.last_page" :total="historyMeta.total" @update:page="historyPage" />
+      </template>
+    </section>
 
     <!-- Confirm modal -->
     <div v-if="modal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="closeModal">

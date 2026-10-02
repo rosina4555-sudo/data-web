@@ -114,7 +114,11 @@ const openModal = () => {
 
 const refundRow = (o) => {
   if (o.refund?.status === 'processing' || o.refund?.status === 'refunded') return
-  selected.value = new Set([o.id])
+  if (!selected.value.has(o.id)) {
+    const next = new Set(selected.value)
+    next.add(o.id)
+    selected.value = next
+  }
   openModal()
 }
 
@@ -268,7 +272,7 @@ onMounted(() => {
                   :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
                   @click="refundRow(o)"
                 >
-                  Refund
+                  {{ selected.size > 1 ? `Refund selected (${selected.size})` : 'Refund' }}
                 </button>
               </td>
             </tr>
@@ -300,7 +304,7 @@ onMounted(() => {
                 :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
                 @click="refundRow(o)"
               >
-                Refund
+                {{ selected.size > 1 ? `Refund selected (${selected.size})` : 'Refund' }}
               </button>
             </div>
           </div>

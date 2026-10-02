@@ -141,6 +141,11 @@ export const adminApi = {
   syncProvider: (id) => request('POST', `/v1/admin/providers/${id}/sync`),
   getProviderBalances: () => request('GET', '/v1/admin/providers/balances'),
 
+  // Routing
+  getRouting: () => request('GET', '/v1/admin/routing'),
+  updateRouting: (networkId, providerIds) =>
+    request('PUT', `/v1/admin/routing/${networkId}`, { provider_ids: providerIds }),
+
   // Orders
   getOrders: (params = {}) => {
     const qs = new URLSearchParams(params).toString()

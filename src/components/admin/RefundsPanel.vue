@@ -75,6 +75,12 @@ const openModal = () => {
   modal.value.open = true
 }
 
+const refundRow = (o) => {
+  if (o.refund?.status === 'processing' || o.refund?.status === 'refunded') return
+  selected.value = new Set([o.id])
+  openModal()
+}
+
 const closeModal = () => {
   if (modal.value.busy) return
   modal.value.open = false
@@ -84,7 +90,10 @@ const confirmRefund = async () => {
   if (!selected.value.size || modal.value.busy) return
   modal.value.busy = true
   try {
-    const res = await adminApi.refundOrdersBulk([...selected.value], modal.value.reason.trim())
+    const ids = [...selected.value]
+    const res = ids.length === 1
+      ? await adminApi.refundOrder(ids[0], modal.value.reason.trim())
+      : await adminApi.refundOrdersBulk(ids, modal.value.reason.trim())
     const { refunded = 0, failed = 0 } = res.data || {}
     const failMsgs = (res.data?.results || []).filter((r) => !r.ok).map((r) => r.message)
     toast(
@@ -101,17 +110,6 @@ const confirmRefund = async () => {
     toast(err?.message || 'Refund failed.', 'error')
   } finally {
     modal.value.busy = false
-  }
-}
-
-const refundOne = async (orderId) => {
-  try {
-    await adminApi.refundOrder(orderId, '')
-    toast('Refund initiated.', 'success')
-    selected.value = new Set()
-    await loadCore()
-  } catch (err) {
-    toast(err?.message || 'Refund failed.', 'error')
   }
 }
 
@@ -227,7 +225,7 @@ onMounted(loadCore)
                   type="button"
                   class="rounded-xl bg-brand-soft px-3 py-1.5 text-[11px] font-extrabold text-brand transition hover:bg-brand/15 disabled:opacity-40"
                   :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
-                  @click="refundOne(o.id)"
+                  @click="refundRow(o)"
                 >
                   Refund
                 </button>
@@ -259,7 +257,7 @@ onMounted(loadCore)
                 type="button"
                 class="rounded-xl bg-brand-soft px-3 py-1.5 text-[11px] font-extrabold text-brand transition hover:bg-brand/15 disabled:opacity-40"
                 :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
-                @click="refundOne(o.id)"
+                @click="refundRow(o)"
               >
                 Refund
               </button>

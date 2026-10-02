@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { adminApi } from '../../services/api'
-import { currency, formatDateTime, timeAgo } from '../../utils/format'
+import { currency, formatDateTime, refundMeta, timeAgo } from '../../utils/format'
 import { toast } from '../../services/toast'
 import StatusPill from '../StatusPill.vue'
 
@@ -61,8 +61,28 @@ const retry = async () => {
   }
 }
 
+const cancelRefund = async (refundId) => {
+  if (!window.confirm('Cancel this refund? The customer has not been paid yet, and the order becomes retryable again.')) return
+  acting.value = true
+  try {
+    await adminApi.cancelRefund(refundId)
+    toast('Refund cancelled.', 'success')
+    await load()
+    emit('updated')
+  } catch (err) {
+    toast(err?.message || 'Could not cancel refund.', 'error')
+  } finally {
+    acting.value = false
+  }
+}
+
+const activeRefund = computed(() =>
+  order.value?.refunds?.find((r) => ['pending', 'processing', 'refunded'].includes(r.status)) || null,
+)
 const canRefresh = computed(() => order.value?.status === 'SUBMITTED')
-const canRetry = computed(() => ['PAID', 'FAILED', 'SUPERVISED'].includes(order.value?.status))
+const canRetry = computed(() =>
+  ['PAID', 'FAILED', 'SUPERVISED'].includes(order.value?.status) && !activeRefund.value,
+)
 const canOverride = computed(() => {
   if (!order.value) return false
   const s = override.value.status
@@ -210,6 +230,36 @@ const attemptsRev = computed(() =>
               </ul>
             </div>
 
+            <!-- Refunds -->
+            <div v-if="order.refunds?.length" class="mt-4">
+              <h3 class="font-heading mb-2 text-xs font-bold tracking-widest text-muted uppercase">Refunds</h3>
+              <ul class="space-y-2">
+                <li v-for="r in order.refunds" :key="r.id" class="clay rounded-2xl bg-surface px-3.5 py-2.5 text-xs">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="font-black text-brand">{{ currency(r.amount) }}</span>
+                      <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap" :class="refundMeta(r.status).cls">{{ refundMeta(r.status).label }}</span>
+                    </div>
+                    <button
+                      v-if="['pending', 'processing'].includes(r.status)"
+                      type="button"
+                      class="rounded-xl bg-red-50 px-3 py-1.5 text-[11px] font-extrabold text-red-600 transition hover:bg-red-100 disabled:opacity-40"
+                      :disabled="acting"
+                      @click="cancelRefund(r.id)"
+                    >
+                      Cancel refund
+                    </button>
+                  </div>
+                  <p v-if="r.reason" class="mt-1 font-medium text-muted break-words">{{ r.reason }}</p>
+                  <p class="mt-0.5 text-[10px] text-muted/70">
+                    initiated {{ timeAgo(r.initiated_at) }}
+                    <template v-if="r.refunded_at"> · refunded {{ timeAgo(r.refunded_at) }}</template>
+                    <template v-if="r.cancelled_at"> · cancelled {{ timeAgo(r.cancelled_at) }} <span v-if="r.cancelled_by">by {{ r.cancelled_by }}</span></template>
+                  </p>
+                </li>
+              </ul>
+            </div>
+
             <!-- Actions -->
             <div class="mt-5 border-t border-brand/10 pt-4">
               <div class="flex flex-wrap gap-2">
@@ -220,6 +270,8 @@ const attemptsRev = computed(() =>
                   Retry submission
                 </button>
               </div>
+              <p v-if="activeRefund" class="mt-2 text-[11px] font-semibold text-amber-700">Retry is disabled — a refund is {{ activeRefund.status === 'refunded' ? 'settled' : 'being processed' }} for this order. Cancel it first to retry.</p>
+              <p v-if="order.status === 'SUPERVISED' && !activeRefund" class="mt-2 text-[11px] font-medium text-muted">You can retry this order or refund the customer from the Refunds tab.</p>
 
               <div class="mt-4 rounded-2xl bg-bg p-4">
                 <p class="text-xs font-bold tracking-widest text-muted uppercase">Override status <span class="font-medium normal-case text-muted/70">(state-machine enforced)</span></p>

@@ -19,7 +19,8 @@ const historyMeta = ref({ current_page: 1, last_page: 1, total: 0 })
 const historyLoading = ref(false)
 const historyError = ref('')
 const histFilter = ref('')
-const counts = ref({ awaiting: 0, processing: 0, refunded: 0, failed: 0 })
+const counts = ref({ awaiting: 0, pending: 0, processing: 0, refunded: 0, failed: 0, cancelled: 0 })
+const cancellingId = ref(null)
 
 const loadCore = async () => {
   loading.value = true
@@ -68,6 +69,21 @@ const selectHistoryFilter = (status) => {
   histFilter.value = status
   historyMeta.value = { current_page: 1, last_page: 1, total: 0 }
   loadHistory()
+}
+
+const cancelRefund = async (r) => {
+  if (!window.confirm(`Cancel this refund for ${r.order_ref}? The customer has not been paid yet, and the order becomes retryable again.`)) return
+  cancellingId.value = r.id
+  try {
+    await adminApi.cancelRefund(r.id)
+    toast('Refund cancelled.', 'success')
+    await loadHistory()
+    loadCore()
+  } catch (err) {
+    toast(err?.message || 'Could not cancel refund.', 'error')
+  } finally {
+    cancellingId.value = null
+  }
 }
 
 const applyFilters = () => {
@@ -323,7 +339,7 @@ onMounted(() => {
         </div>
         <div class="flex flex-wrap gap-1.5">
           <button
-            v-for="opt in [{ value: '', label: `All (${counts.pending + counts.processing + counts.refunded + counts.failed})` }, { value: 'pending', label: `Pending (${counts.pending})` }, { value: 'processing', label: `Refunding (${counts.processing})` }, { value: 'refunded', label: `Refunded (${counts.refunded})` }, { value: 'failed', label: `Failed (${counts.failed})` }]"
+            v-for="opt in [{ value: '', label: `All (${counts.pending + counts.processing + counts.refunded + counts.failed + counts.cancelled})` }, { value: 'pending', label: `Pending (${counts.pending})` }, { value: 'processing', label: `Refunding (${counts.processing})` }, { value: 'refunded', label: `Refunded (${counts.refunded})` }, { value: 'failed', label: `Failed (${counts.failed})` }, { value: 'cancelled', label: `Cancelled (${counts.cancelled})` }]"
             :key="opt.value"
             type="button"
             class="rounded-xl px-3 py-1.5 text-[11px] font-extrabold transition"
@@ -374,9 +390,20 @@ onMounted(() => {
                 <td class="px-4 py-3 font-medium text-brand-dark/70">{{ r.phone }}</td>
                 <td class="px-4 py-3 text-right font-heading font-black text-brand">{{ currency(r.amount) }}</td>
                 <td class="px-4 py-3">
-                  <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap" :class="refundMeta(r.status).cls">
-                    {{ refundMeta(r.status).label }}
-                  </span>
+                  <div class="flex items-center gap-2">
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold whitespace-nowrap" :class="refundMeta(r.status).cls">
+                      {{ refundMeta(r.status).label }}
+                    </span>
+                    <button
+                      v-if="['pending', 'processing'].includes(r.status)"
+                      type="button"
+                      class="rounded-xl bg-red-50 px-2.5 py-1 text-[10px] font-extrabold text-red-600 transition hover:bg-red-100 disabled:opacity-40"
+                      :disabled="cancellingId === r.id"
+                      @click="cancelRefund(r)"
+                    >
+                      {{ cancellingId === r.id ? 'Cancelling…' : 'Cancel' }}
+                    </button>
+                  </div>
                 </td>
                 <td class="px-4 py-3 font-mono text-[10px] text-brand-dark/60">
                   <p v-if="r.paystack_refund_ref">{{ r.paystack_refund_ref }}</p>
@@ -401,6 +428,15 @@ onMounted(() => {
                 <p class="mt-0.5 text-xs text-muted">{{ r.phone }} · {{ currency(r.amount) }}</p>
                 <p v-if="r.paystack_refund_ref" class="mt-1 truncate font-mono text-[10px] text-brand-dark/60">{{ r.paystack_refund_ref }}</p>
                 <p class="mt-1 text-[10px] text-muted">{{ formatDateTime(r.initiated_at || r.created_at) }}</p>
+                <button
+                  v-if="['pending', 'processing'].includes(r.status)"
+                  type="button"
+                  class="mt-2 rounded-xl bg-red-50 px-3 py-1.5 text-[11px] font-extrabold text-red-600 transition hover:bg-red-100 disabled:opacity-40"
+                  :disabled="cancellingId === r.id"
+                  @click="cancelRefund(r)"
+                >
+                  {{ cancellingId === r.id ? 'Cancelling…' : 'Cancel refund' }}
+                </button>
               </div>
             </div>
           </li>

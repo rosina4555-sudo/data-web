@@ -170,6 +170,7 @@ export const adminApi = {
     const qs = new URLSearchParams(params).toString()
     return request('GET', `/v1/admin/refunds/history${qs ? '?' + qs : ''}`)
   },
+  cancelRefund: (id) => request('POST', `/v1/admin/refunds/${id}/cancel`),
 
   // Webhook events
   getWebhookEvents: (params = {}) => {

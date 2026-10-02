@@ -50,11 +50,22 @@ export const STATUS_META = {
   SUCCESS: { label: 'Delivered', cls: 'bg-emerald-50 text-emerald-700' },
   FAILED: { label: 'Failed', cls: 'bg-red-50 text-red-600' },
   SUPERVISED: { label: 'Needs review', cls: 'bg-rose-50 text-rose-600' },
+  REFUNDED: { label: 'Refunded', cls: 'bg-emerald-50 text-emerald-700' },
   EXPIRED: { label: 'Expired', cls: 'bg-slate-100 text-slate-500' },
 }
 
 export const statusMeta = (status) =>
   STATUS_META[status] || { label: status || '—', cls: 'bg-slate-100 text-slate-500' }
+
+/** Customer-refund lifecycle (refunds table status). */
+export const REFUND_META = {
+  processing: { label: 'Refunding', cls: 'bg-amber-50 text-amber-700' },
+  refunded: { label: 'Refunded', cls: 'bg-emerald-50 text-emerald-700' },
+  failed: { label: 'Refund failed', cls: 'bg-red-50 text-red-600' },
+}
+
+export const refundMeta = (status) =>
+  REFUND_META[status] || { label: status || 'Not started', cls: 'bg-slate-100 text-slate-500' }
 
 /** Network code → short label + dot colour for chips. */
 export const NETWORK_DOT = {

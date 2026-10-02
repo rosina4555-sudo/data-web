@@ -5,6 +5,7 @@ import { adminApi, getAdmin } from '../services/api'
 import Logo from '../components/Logo.vue'
 import OverviewPanel from '../components/admin/OverviewPanel.vue'
 import OrdersPanel from '../components/admin/OrdersPanel.vue'
+import RefundsPanel from '../components/admin/RefundsPanel.vue'
 import PackagesPanel from '../components/admin/PackagesPanel.vue'
 import NetworksPanel from '../components/admin/NetworksPanel.vue'
 import ProvidersPanel from '../components/admin/ProvidersPanel.vue'
@@ -15,6 +16,7 @@ defineEmits(['logout'])
 const tabs = [
   { id: 'overview', label: 'Overview', icon: 'chart' },
   { id: 'orders', label: 'Orders', icon: 'receipt' },
+  { id: 'refunds', label: 'Refunds', icon: 'refund' },
   { id: 'packages', label: 'Bundles', icon: 'drop' },
   { id: 'networks', label: 'Networks', icon: 'signal' },
   { id: 'providers', label: 'Providers', icon: 'server' },
@@ -26,6 +28,7 @@ const adminInfo = ref(getAdmin())
 const panels = {
   overview: OverviewPanel,
   orders: OrdersPanel,
+  refunds: RefundsPanel,
   packages: PackagesPanel,
   networks: NetworksPanel,
   providers: ProvidersPanel,
@@ -75,6 +78,7 @@ const ActivePanel = computed(() => panels[activeTab.value])
           <svg v-else-if="t.icon === 'drop'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 17.66 8.35a8 8 0 1 1-11.31 0z"/></svg>
           <svg v-else-if="t.icon === 'signal'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="15" width="3" height="5.5" rx="1"/><rect x="8.5" y="11" width="3" height="9.5" rx="1"/><rect x="14.5" y="7" width="3" height="13.5" rx="1"/></svg>
           <svg v-else-if="t.icon === 'webhook'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 8-2 6"/><path d="m8 8 2 6"/><path d="M12 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>
+          <svg v-else-if="t.icon === 'refund'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
           <svg v-else class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
           {{ t.label }}
         </button>

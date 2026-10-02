@@ -16,7 +16,7 @@ const providers = ref([])
 const filters = ref({ status: '', phone: '', ref: '', provider_id: '', from: '', to: '' })
 const activeDetail = ref(null)
 
-const STATUSES = ['PENDING_PAYMENT', 'PAID', 'SUBMITTED', 'SUCCESS', 'FAILED', 'SUPERVISED', 'EXPIRED']
+const STATUSES = ['PENDING_PAYMENT', 'PAID', 'SUBMITTED', 'SUCCESS', 'FAILED', 'SUPERVISED', 'REFUNDED', 'EXPIRED']
 
 const loadCore = async () => {
   loading.value = true

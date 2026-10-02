@@ -151,6 +151,16 @@ export const adminApi = {
   refreshStatus: (id) => request('POST', `/v1/admin/orders/${id}/refresh-status`),
   retry: (id) => request('POST', `/v1/admin/orders/${id}/retry`),
 
+  // Refunds
+  getRefunds: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/refunds${qs ? '?' + qs : ''}`)
+  },
+  refundOrder: (orderId, reason = '') =>
+    request('POST', '/v1/admin/refunds', { order_id: orderId, reason }),
+  refundOrdersBulk: (orderIds, reason = '') =>
+    request('POST', '/v1/admin/refunds/bulk', { order_ids: orderIds, reason }),
+
   // Webhook events
   getWebhookEvents: (params = {}) => {
     const qs = new URLSearchParams(params).toString()

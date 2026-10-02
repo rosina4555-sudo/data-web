@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { currency } from '../utils/format'
-import { NETWORK_COLORS, SITE } from '../site'
+import { NETWORK_BTN, NETWORK_COLORS, SITE } from '../site'
 
 const props = defineProps({
   network: { type: Object, default: () => ({ code: 'MTN', name: 'MTN' }) },
@@ -13,6 +13,7 @@ const emit = defineEmits(['buy'])
 
 const sizeLabel = computed(() => props.pkg.provider_package?.size_label || props.pkg.size_label || '')
 const gradient = computed(() => NETWORK_COLORS[props.network.code] || NETWORK_COLORS.DEFAULT)
+const buyBtn = computed(() => NETWORK_BTN[props.network.code] || NETWORK_BTN.DEFAULT)
 const priceRaw = computed(() => Number(props.pkg.sell_price || 0))
 
 const perks = computed(() => {
@@ -90,7 +91,9 @@ const perks = computed(() => {
       <button
         type="button"
         @click="emit('buy', pkg)"
-        class="clay-btn-gold mt-4 w-full shrink-0 rounded-2xl bg-gradient-to-r from-accent to-accent-dark py-2.5 text-sm font-extrabold tracking-wide text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none sm:py-3"
+        class="clay-btn-buy mt-4 w-full shrink-0 rounded-2xl bg-gradient-to-r py-2.5 text-sm font-extrabold tracking-wide text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none sm:py-3"
+        :class="buyBtn.grad"
+        :style="{ '--buy-glow': buyBtn.glow }"
       >
         Buy Data Bundle →
       </button>

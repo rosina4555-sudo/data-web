@@ -21,3 +21,15 @@ export const NETWORK_COLORS = {
   TELECEL: 'from-red-500 to-rose-700',
   DEFAULT: 'from-brand to-accent',
 }
+
+/**
+ * Per-network "Buy" button — a deeper shade of the same card cap colour so the
+ * top of every card and its purchase button always match (as MTN's gold does).
+ */
+export const NETWORK_BTN = {
+  MTN: { grad: 'from-amber-400 to-amber-600', glow: 'rgba(217, 119, 6, 0.55)' },
+  AIRTELTIGO: { grad: 'from-blue-600 to-indigo-800', glow: 'rgba(37, 99, 235, 0.5)' },
+  AT: { grad: 'from-blue-600 to-indigo-800', glow: 'rgba(37, 99, 235, 0.5)' },
+  TELECEL: { grad: 'from-red-600 to-rose-800', glow: 'rgba(220, 38, 38, 0.5)' },
+  DEFAULT: { grad: 'from-accent to-accent-dark', glow: 'rgba(245, 166, 35, 0.6)' },
+}

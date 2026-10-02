@@ -127,6 +127,28 @@
       0 3px 8px -4px rgba(11, 46, 32, 0.22);
   }
 
+  /* "Buy" button — 3D clay press effect with a per-network glow (--buy-glow). */
+  .clay-btn-buy {
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -4px 0 rgba(0, 0, 0, 0.28),
+      0 8px 18px -6px var(--buy-glow, rgba(245, 166, 35, 0.6));
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease,
+      filter 150ms ease;
+  }
+  .clay-btn-buy:hover {
+    filter: brightness(1.06);
+  }
+  .clay-btn-buy:active {
+    transform: translateY(3px);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+      0 3px 8px -4px var(--buy-glow, rgba(245, 166, 35, 0.5));
+  }
+
   /* Gold "buy" button with warm glow */
   .clay-btn-gold {
     box-shadow:

@@ -21,6 +21,21 @@ const checkout = ref(null) // { network, pkg }
 const loading = ref(true)
 const loadError = ref('')
 
+// Refund-policy notice (shown on first visit, dismissible)
+const REFUND_POLICY_URL = 'https://support.paystack.com/en/articles/2127106'
+const REFUND_NOTICE_KEY = 'dp_refund_notice_dismissed'
+const noticeDismissed = ref(
+  typeof localStorage !== 'undefined' && localStorage.getItem(REFUND_NOTICE_KEY) === '1',
+)
+const dismissNotice = () => {
+  noticeDismissed.value = true
+  try {
+    localStorage.setItem(REFUND_NOTICE_KEY, '1')
+  } catch {
+    /* private mode — just hide for this visit */
+  }
+}
+
 onMounted(async () => {
   try {
     const res = await api.getNetworks()
@@ -190,6 +205,57 @@ const priceSummary = computed(() => {
           <div>
             <p class="font-heading text-sm font-black text-white sm:text-lg">{{ priceSummary }}</p>
             <p class="text-[10px] font-bold tracking-widest text-white/70 uppercase">Price range</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Refund guarantee notice -->
+      <section v-if="!noticeDismissed" class="mt-5 sm:mt-8">
+        <div class="clay relative overflow-hidden rounded-3xl border border-brand/10 bg-gradient-to-br from-brand-soft via-surface to-accent-soft px-4 py-4 sm:px-6 sm:py-5">
+          <div class="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-accent/10 blur-2xl"></div>
+          <button
+            type="button"
+            aria-label="Dismiss refund notice"
+            class="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-xl bg-surface/80 text-muted transition hover:bg-surface hover:text-brand"
+            @click="dismissNotice"
+          >
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+            <span class="clay-sm flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <p class="font-heading text-sm font-bold tracking-tight text-brand-dark sm:text-base">Refund guarantee — we've got you covered</p>
+              <p class="mt-1 text-xs leading-relaxed text-ink/70 sm:text-sm">
+                Data is delivered in seconds. Orders only fail when a phone number can't be verified — and when that happens, we refund you automatically.
+              </p>
+              <ul class="mt-2 grid gap-x-4 gap-y-1.5 text-xs font-medium text-ink/70 sm:grid-cols-2 sm:text-[13px]">
+                <li class="flex items-center gap-1.5">
+                  <svg class="h-3.5 w-3.5 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Refunded through Paystack, securely
+                </li>
+                <li class="flex items-center gap-1.5">
+                  <svg class="h-3.5 w-3.5 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Instant delivery in seconds
+                </li>
+                <li class="flex items-center gap-1.5">
+                  <svg class="h-3.5 w-3.5 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Only unverified numbers fail — and they're refunded
+                </li>
+              </ul>
+            </div>
+
+            <a
+              :href="REFUND_POLICY_URL"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="clay-btn self-start shrink-0 rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-center text-xs font-extrabold text-white sm:self-auto"
+            >
+              Read Paystack's refund policy ↗
+            </a>
           </div>
         </div>
       </section>

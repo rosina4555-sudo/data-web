@@ -13,6 +13,8 @@ const daily = ref([])
 const byNetwork = ref([])
 const byProvider = ref([])
 const topPackages = ref([])
+const balances = ref([])
+const walletsLoading = ref(false)
 const loadError = ref('')
 
 const rangeParams = () => {
@@ -23,10 +25,23 @@ const rangeParams = () => {
   return { from: fmt(from), to: fmt(to) }
 }
 
+const loadWallets = async () => {
+  walletsLoading.value = true
+  try {
+    const res = await adminApi.getProviderBalances()
+    balances.value = res.data?.balances || res.balances || []
+  } catch {
+    balances.value = []
+  } finally {
+    walletsLoading.value = false
+  }
+}
+
 const load = async () => {
   loading.value = true
   loadError.value = ''
   const p = rangeParams()
+  loadWallets()
   try {
     const [ov, dl, net, prov, top] = await Promise.all([
       adminApi.getOverview(p),
@@ -82,6 +97,9 @@ const topWithPct = computed(() =>
     orders: Number(t.orders) || 0,
   })),
 )
+
+const walletOf = (id) => balances.value.find((b) => b.id === id)
+const hasWallet = computed(() => balances.value.length > 0)
 
 const ov = computed(() => overview.value || {})
 const avgDelivery = computed(() => {
@@ -190,7 +208,20 @@ const avgDelivery = computed(() => {
 
         <!-- Providers -->
         <div class="clay rounded-3xl bg-surface p-4 sm:p-5">
-          <h2 class="font-heading mb-3 text-sm font-bold text-brand-dark">Providers</h2>
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="font-heading text-sm font-bold text-brand-dark">Providers</h2>
+            <div v-if="hasWallet" class="flex items-center gap-2">
+              <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">Wallet</span>
+              <button
+                type="button"
+                class="rounded-lg px-2 py-1 text-[10px] font-bold transition"
+                :class="walletsLoading ? 'text-muted' : 'text-brand hover:bg-brand-soft'"
+                :disabled="walletsLoading"
+                title="Refresh wallet balances"
+                @click="loadWallets"
+              >{{ walletsLoading ? '…' : '↻' }}</button>
+            </div>
+          </div>
           <ul class="space-y-3">
             <li v-for="p in byProvider" :key="p.id" class="flex items-center gap-3">
               <div class="min-w-0 flex-1">
@@ -204,6 +235,9 @@ const avgDelivery = computed(() => {
                   <span v-if="p.supervised" class="rounded bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600">{{ p.supervised }} review</span>
                   <span class="rounded bg-slate-100 px-1.5 py-0.5 font-bold text-slate-500">{{ p.pending }} pending</span>
                 </div>
+                <p v-if="hasWallet" class="mt-1 text-[10px] font-bold" :class="walletOf(p.id)?.error ? 'text-red-500' : 'text-emerald-700'">
+                  Wallet {{ walletOf(p.id)?.error ? '— unavailable' : currency(walletOf(p.id).balance) + ' ' + (walletOf(p.id).currency || '') }}
+                </p>
               </div>
             </li>
             <li v-if="!byProvider.length" class="py-6 text-center text-xs text-muted">No provider activity yet.</li>

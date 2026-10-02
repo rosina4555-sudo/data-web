@@ -139,6 +139,7 @@ export const adminApi = {
     return request('GET', `/v1/admin/provider-packages${qs ? '?' + qs : ''}`)
   },
   syncProvider: (id) => request('POST', `/v1/admin/providers/${id}/sync`),
+  getProviderBalances: () => request('GET', '/v1/admin/providers/balances'),
 
   // Orders
   getOrders: (params = {}) => {

@@ -16,8 +16,8 @@ export const SITE = {
 /** Per-network accent (cap / chip colours) — fallback gradient used otherwise. */
 export const NETWORK_COLORS = {
   MTN: 'from-amber-300 to-yellow-500 text-amber-950',
-  AIRTELTIGO: 'from-orange-400 to-rose-500',
-  AT: 'from-orange-400 to-rose-500',
-  TELECEL: 'from-emerald-300 to-teal-500',
+  AIRTELTIGO: 'from-red-500 to-rose-700',
+  AT: 'from-red-500 to-rose-700',
+  TELECEL: 'from-emerald-400 to-green-600',
   DEFAULT: 'from-brand to-accent',
 }

@@ -71,8 +71,8 @@ export const refundMeta = (status) =>
 /** Network code → short label + dot colour for chips. */
 export const NETWORK_DOT = {
   MTN: 'bg-amber-400',
-  AIRTELTIGO: 'bg-orange-500',
-  AT: 'bg-orange-500',
+  AIRTELTIGO: 'bg-red-500',
+  AT: 'bg-red-500',
   TELECEL: 'bg-emerald-400',
 }
 

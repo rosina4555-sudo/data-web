@@ -47,10 +47,63 @@ const refreshStatus = async () => {
   }
 }
 
-const retry = async () => {
+const retry = async (providerId = null) => {
   acting.value = true
   try {
-    await adminApi.retry(props.orderId)
+    await adminApi.retry(props.orderId, providerId)
+    toast('Resubmission started.', 'success')
+    await load()
+    emit('updated')
+  } catch (err) {
+    toast(err?.message || 'Retry failed.', 'error')
+  } finally {
+    acting.value = false
+  }
+}
+
+const retryPickerOpen = ref(false)
+const retryProviders = ref([])
+const selectedProviderId = ref(null)
+const loadingRetryProviders = ref(false)
+
+const openRetryPicker = async () => {
+  loadingRetryProviders.value = true
+  selectedProviderId.value = null
+  retryProviders.value = []
+  try {
+    const res = await adminApi.retryProviders(props.orderId)
+    retryProviders.value = (res.data || res)?.eligible_providers || []
+    const current = (res.data || res)?.order
+    if (current?.current_provider_id) {
+      selectedProviderId.value = current.current_provider_id
+    } else if (retryProviders.value.length) {
+      selectedProviderId.value = retryProviders.value[0].provider_id
+    }
+  } catch (err) {
+    toast(err?.message || 'Could not load retry options.', 'error')
+  } finally {
+    loadingRetryProviders.value = false
+  }
+  retryPickerOpen.value = true
+}
+
+const closeRetryPicker = () => {
+  retryPickerOpen.value = false
+}
+
+const retryWithCurrent = async () => {
+  await closeRetryPicker()
+  if (order.value?.current_provider_id) {
+    await retry(order.value.current_provider_id)
+  }
+}
+
+const confirmRetry = async () => {
+  if (!selectedProviderId.value) return
+  retryPickerOpen.value = false
+  acting.value = true
+  try {
+    await adminApi.retry(props.orderId, selectedProviderId.value)
     toast('Resubmission started.', 'success')
     await load()
     emit('updated')
@@ -266,8 +319,13 @@ const attemptsRev = computed(() =>
                 <button type="button" :disabled="!canRefresh || acting" class="clay-btn-light rounded-xl bg-surface px-3.5 py-2 text-xs font-extrabold text-brand transition disabled:opacity-40" @click="refreshStatus">
                   ↻ Refresh status
                 </button>
-                <button type="button" :disabled="!canRetry || acting" class="clay-btn rounded-xl bg-gradient-to-r from-brand to-brand-dark px-3.5 py-2 text-xs font-extrabold text-white transition disabled:opacity-40" @click="retry">
-                  Retry submission
+                <button
+                  type="button"
+                  :disabled="!canRetry || acting"
+                  class="clay-btn rounded-xl bg-gradient-to-r from-brand to-brand-dark px-3.5 py-2 text-xs font-extrabold text-white transition disabled:opacity-40"
+                  @click="openRetryPicker"
+                >
+                  Retry with provider…
                 </button>
               </div>
               <p v-if="activeRefund" class="mt-2 text-[11px] font-semibold text-amber-700">Retry is disabled — a refund is {{ activeRefund.status === 'refunded' ? 'settled' : 'being processed' }} for this order. Cancel it first to retry.</p>
@@ -291,6 +349,106 @@ const attemptsRev = computed(() =>
         <footer class="shrink-0 border-t border-brand/10 px-5 py-3 text-center text-[10px] font-medium text-muted/60">
           {{ order?.updated_at ? `Updated ${timeAgo(order.updated_at)} · ` : '' }}Reference {{ order?.reference }}
         </footer>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- Retry provider picker -->
+  <Teleport to="body" v-if="retryPickerOpen">
+    <div class="fixed inset-0 z-[60] flex items-end justify-center bg-brand-dark/45 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" @click.self="closeRetryPicker">
+      <div class="clay flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface sm:max-w-lg sm:rounded-3xl">
+        <div class="flex shrink-0 items-center justify-between border-b border-brand/10 px-5 py-4">
+          <div class="min-w-0">
+            <p class="font-mono truncate text-sm font-bold text-brand-dark">{{ order?.reference || `#${orderId}` }}</p>
+            <p class="mt-0.5 text-[11px] font-medium text-muted">
+              Choose a provider to resubmit this {{ order?.status?.toLowerCase() }} order to.
+              The order will be submitted to the provider's matching package for
+              {{ order?.network || 'this network' }}.
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-brand/5 hover:text-brand"
+            @click="closeRetryPicker"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="hide-scrollbar flex-1 overflow-y-auto px-5 py-4">
+          <div v-if="loadingRetryProviders" class="flex items-center justify-center py-16">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-brand/15 border-t-brand"></div>
+          </div>
+
+          <div v-else-if="!retryProviders.length" class="py-8 text-center">
+            <p class="text-sm font-bold text-brand-dark">No other providers available</p>
+            <p class="mt-1 text-xs text-muted">
+              This order's package is only available on the current provider.
+              Retry will use the same provider.
+            </p>
+            <div class="mt-4 flex justify-center">
+              <button
+                type="button"
+                :disabled="!order?.current_provider_id || acting"
+                class="clay-btn rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2 text-xs font-extrabold text-white transition disabled:opacity-40"
+                @click="retryWithCurrent"
+              >
+                Retry with current provider
+              </button>
+            </div>
+          </div>
+
+          <template v-else>
+            <p class="mb-3 text-[11px] font-bold tracking-widest text-muted uppercase">Select provider</p>
+            <ul class="space-y-2">
+              <li
+                v-for="p in retryProviders"
+                :key="p.provider_id"
+                class="clay rounded-2xl bg-surface p-3.5"
+              >
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    v-model="selectedProviderId"
+                    :value="p.provider_id"
+                    class="mt-0.5 h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-brand/20 text-brand bg-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  />
+                  <div class="min-w-0">
+                    <p class="font-semibold text-sm text-brand-dark">{{ p.provider_name }}</p>
+                    <p class="text-[11px] text-muted">
+                      {{ p.package.provider_reference }}
+                      <span v-if="p.package.size_label" class="ml-1 text-muted/60">· {{ p.package.size_label }}</span>
+                      <span class="ml-1 text-muted/40">· provider cost {{ p.package.provider_price }}</span>
+                    </p>
+                    <p v-if="p.is_current_provider" class="mt-1 text-[11px] font-semibold text-amber-700">
+                      Current provider (order failed here)
+                    </p>
+                  </div>
+                </label>
+              </li>
+            </ul>
+          </template>
+        </div>
+
+        <div class="shrink-0 border-t border-brand/10 px-5 py-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            class="clay-btn-light rounded-xl bg-surface px-4 py-2 text-xs font-extrabold text-muted transition hover:text-brand disabled:opacity-40"
+            :disabled="acting"
+            @click="closeRetryPicker"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            :disabled="!selectedProviderId || acting"
+            class="clay-btn rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2 text-xs font-extrabold text-white transition disabled:opacity-40"
+            @click="confirmRetry"
+          >
+            Retry with selected provider
+          </button>
+        </div>
       </div>
     </div>
   </Teleport>

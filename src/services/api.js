@@ -155,7 +155,8 @@ export const adminApi = {
   changeStatus: (id, status, note) =>
     request('POST', `/v1/admin/orders/${id}/status`, { status, note }),
   refreshStatus: (id) => request('POST', `/v1/admin/orders/${id}/refresh-status`),
-  retry: (id) => request('POST', `/v1/admin/orders/${id}/retry`),
+  retryProviders: (id) => request('GET', `/v1/admin/orders/${id}/retry-providers`),
+  retry: (id, providerId = null) => request('POST', `/v1/admin/orders/${id}/retry`, providerId ? { provider_id: providerId } : {}),
 
   // Refunds
   getRefunds: (params = {}) => {

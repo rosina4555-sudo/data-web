@@ -128,8 +128,12 @@ const openModal = () => {
   modal.value.open = true
 }
 
+// 'pending' is a live claim on the charge: a refund request is already in
+// flight at the gateway, so a second attempt would double-refund the customer.
+const refundInFlight = (o) => ['pending', 'processing', 'refunded'].includes(o.refund?.status)
+
 const refundRow = (o) => {
-  if (o.refund?.status === 'processing' || o.refund?.status === 'refunded') return
+  if (refundInFlight(o)) return
   if (!selected.value.has(o.id)) {
     const next = new Set(selected.value)
     next.add(o.id)
@@ -285,7 +289,7 @@ onMounted(() => {
                 <button
                   type="button"
                   class="rounded-xl bg-brand-soft px-3 py-1.5 text-[11px] font-extrabold text-brand transition hover:bg-brand/15 disabled:opacity-40"
-                  :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
+                  :disabled="refundInFlight(o)"
                   @click="refundRow(o)"
                 >
                   {{ selected.size > 1 ? `Refund selected (${selected.size})` : 'Refund' }}
@@ -317,7 +321,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="rounded-xl bg-brand-soft px-3 py-1.5 text-[11px] font-extrabold text-brand transition hover:bg-brand/15 disabled:opacity-40"
-                :disabled="o.refund?.status === 'processing' || o.refund?.status === 'refunded'"
+                :disabled="refundInFlight(o)"
                 @click="refundRow(o)"
               >
                 {{ selected.size > 1 ? `Refund selected (${selected.size})` : 'Refund' }}

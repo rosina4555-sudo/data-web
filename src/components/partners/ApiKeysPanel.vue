@@ -10,11 +10,12 @@
  * out of a partner's wallet the moment it is compromised, so it does not wait
  * for a confirmation dialog the way a low-stakes form would.
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { formatDateTime } from '../../utils/format'
 import LoadError from '../LoadError.vue'
+import TenantPicker from './TenantPicker.vue'
 
 const ALL_SCOPES = [
   { id: 'catalog:read', label: 'Read catalogue', hint: 'List packages and prices' },
@@ -24,32 +25,17 @@ const ALL_SCOPES = [
   { id: 'wallet:topup', label: 'Top up wallet', hint: 'Adds credit — treat as money' },
 ]
 
-const tenants = ref([])
 const tenantId = ref(null)
+const noTenants = ref(false)
 const keys = ref([])
 const loading = ref(false)
 const error = ref('')
-
-// The partner picker and the keys table are two different loads; if the picker
-// one fails the panel must not claim there are no partners to choose from.
-const tenantsError = ref('')
-const loadError = computed(() => tenantsError.value || error.value)
 
 const issuing = ref(false)
 const form = ref({ label: '', scopes: ['catalog:read', 'orders:read'], expires_at: '', ip_allowlist: '' })
 
 const issuedSecret = ref(null)
 const copied = ref(false)
-
-const loadTenants = async () => {
-  try {
-    const res = await partnerApi.getTenants({ per_page: 100 })
-    tenants.value = res.data
-    tenantsError.value = ''
-  } catch (err) {
-    tenantsError.value = err?.message || 'Could not load partners.'
-  }
-}
 
 const loadKeys = async () => {
   if (!tenantId.value) {
@@ -67,16 +53,6 @@ const loadKeys = async () => {
     loading.value = false
   }
 }
-
-// Retry re-runs both halves: a failed picker load leaves no partner selected,
-// so reloading only the keys would show an empty table and nothing to fix it.
-const reload = async () => {
-  await loadTenants()
-  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
-  await loadKeys()
-}
-
-onMounted(reload)
 
 const toggleScope = (scope) => {
   const list = form.value.scopes
@@ -156,18 +132,11 @@ const closeSecret = () => {
       </div>
       <label class="block min-w-56">
         <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">Partner</span>
-        <select
-          v-model="tenantId"
-          class="clay-well w-full rounded-xl bg-bg px-3 py-2 text-xs font-semibold text-brand-dark outline-none"
-          @change="loadKeys"
-        >
-          <option :value="null" disabled>Select a partner…</option>
-          <option v-for="t in tenants" :key="t.id" :value="t.id">{{ t.name }} ({{ t.slug }})</option>
-        </select>
+        <TenantPicker v-model="tenantId" auto-select-first @change="loadKeys" @emptied="noTenants = $event" />
       </label>
     </div>
 
-    <LoadError :error="loadError" :busy="loading" @retry="reload" />
+    <LoadError :error="error" :busy="loading" @retry="loadKeys" />
 
     <template v-if="tenantId">
       <div class="clay rounded-2xl bg-surface p-4 sm:p-5">
@@ -291,8 +260,11 @@ const closeSecret = () => {
       </div>
     </template>
 
-    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
-      Create a partner first.
+    <p v-else-if="noTenants" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Create a partner first, then issue each integration its own key.
+    </p>
+    <p v-else-if="!tenantId" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Pick a partner above to see their keys.
     </p>
 
     <!-- The one-time secret -->

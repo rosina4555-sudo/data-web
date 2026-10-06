@@ -12,16 +12,17 @@
  * and letting the table tell the operator what actually happened, rather than
  * showing a bare error for an action that partially succeeded.
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money, settlementMeta, isRetryable } from '../../utils/partners'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
 import LoadError from '../LoadError.vue'
+import TenantPicker from './TenantPicker.vue'
 
-const tenants = ref([])
 const tenantId = ref(null)
+const noTenants = ref(false)
 const rows = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0 })
 const page = ref(1)
@@ -29,20 +30,6 @@ const status = ref('')
 const loading = ref(false)
 const error = ref('')
 const retryingId = ref(null)
-
-// Two loads (picker, rows); the picker failing must not read as "no partners".
-const tenantsError = ref('')
-const loadError = computed(() => tenantsError.value || error.value)
-
-const loadTenants = async () => {
-  try {
-    const res = await partnerApi.getTenants({ per_page: 100 })
-    tenants.value = res.data
-    tenantsError.value = ''
-  } catch (err) {
-    tenantsError.value = err?.message || 'Could not load partners.'
-  }
-}
 
 const load = async () => {
   if (!tenantId.value) {
@@ -65,14 +52,6 @@ const load = async () => {
     loading.value = false
   }
 }
-
-const reload = async () => {
-  await loadTenants()
-  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
-  await load()
-}
-
-onMounted(reload)
 
 const retry = async (row) => {
   if (retryingId.value !== null) return
@@ -105,14 +84,12 @@ const retry = async (row) => {
       <div class="flex items-end gap-2">
         <label class="block min-w-52">
           <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">Partner</span>
-          <select
+          <TenantPicker
             v-model="tenantId"
-            class="clay-well w-full rounded-xl bg-bg px-3 py-2 text-xs font-semibold text-brand-dark outline-none"
+            auto-select-first
             @change="((page = 1), load())"
-          >
-            <option :value="null" disabled>Select a partner…</option>
-            <option v-for="t in tenants" :key="t.id" :value="t.id">{{ t.name }} ({{ t.slug }})</option>
-          </select>
+            @emptied="noTenants = $event"
+          />
         </label>
         <label class="block">
           <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">Status</span>
@@ -131,7 +108,7 @@ const retry = async (row) => {
       </div>
     </div>
 
-    <LoadError :error="loadError" :busy="loading" @retry="reload" />
+    <LoadError :error="error" :busy="loading" @retry="load" />
 
     <div v-if="tenantId" class="clay overflow-hidden rounded-2xl bg-surface">
       <div class="overflow-x-auto">
@@ -197,8 +174,11 @@ const retry = async (row) => {
       </div>
     </div>
 
-    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
-      Create a partner first.
+    <p v-else-if="noTenants" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Create a partner first — queued settlements appear here once they exist.
+    </p>
+    <p v-else-if="!tenantId" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Pick a partner above to see their settlements.
     </p>
   </div>
 </template>

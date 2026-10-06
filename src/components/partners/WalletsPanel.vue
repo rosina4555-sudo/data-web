@@ -14,11 +14,12 @@
  *    into a balance figure, because a balance that disagrees with the ledger is
  *    the single most expensive thing to miss.
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money, newIdempotencyKey } from '../../utils/partners'
 import LoadError from '../LoadError.vue'
+import TenantPicker from './TenantPicker.vue'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
 
@@ -34,8 +35,8 @@ const ENTRY_META = {
 
 const entryMeta = (type) => ENTRY_META[type] || { label: type || '—', cls: 'bg-slate-100 text-slate-500' }
 
-const tenants = ref([])
 const tenantId = ref(null)
+const noTenants = ref(false)
 const wallet = ref(null)
 const entries = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0 })
@@ -44,24 +45,10 @@ const direction = ref('')
 const loading = ref(false)
 const error = ref('')
 
-// Two loads (picker, ledger); the picker failing must not read as "no partners".
-const tenantsError = ref('')
-const loadError = computed(() => tenantsError.value || error.value)
-
 const showAdjust = ref(false)
 const adjusting = ref(false)
 const form = ref({ direction: 'credit', amount: '', reason: '' })
 const idempotencyKey = ref(newIdempotencyKey())
-
-const loadTenants = async () => {
-  try {
-    const res = await partnerApi.getTenants({ per_page: 100 })
-    tenants.value = res.data
-    tenantsError.value = ''
-  } catch (err) {
-    tenantsError.value = err?.message || 'Could not load partners.'
-  }
-}
 
 const loadWallet = async () => {
   if (!tenantId.value) {
@@ -89,14 +76,6 @@ const loadWallet = async () => {
     loading.value = false
   }
 }
-
-const reload = async () => {
-  await loadTenants()
-  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
-  await loadWallet()
-}
-
-onMounted(reload)
 
 const openAdjust = () => {
   form.value = { direction: 'credit', amount: '', reason: '' }
@@ -161,14 +140,12 @@ const submitAdjust = async () => {
       <div class="flex items-end gap-2">
         <label class="block min-w-52">
           <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">Partner</span>
-          <select
+          <TenantPicker
             v-model="tenantId"
-            class="clay-well w-full rounded-xl bg-bg px-3 py-2 text-xs font-semibold text-brand-dark outline-none"
+            auto-select-first
             @change="((page = 1), loadWallet())"
-          >
-            <option :value="null" disabled>Select a partner…</option>
-            <option v-for="t in tenants" :key="t.id" :value="t.id">{{ t.name }} ({{ t.slug }})</option>
-          </select>
+            @emptied="noTenants = $event"
+          />
         </label>
         <button
           v-if="wallet"
@@ -181,7 +158,7 @@ const submitAdjust = async () => {
       </div>
     </div>
 
-    <LoadError :error="loadError" :busy="loading" @retry="reload" />
+    <LoadError :error="error" :busy="loading" @retry="loadWallet" />
 
     <template v-if="wallet">
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -276,8 +253,11 @@ const submitAdjust = async () => {
       </div>
     </template>
 
-    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
-      Create a partner first.
+    <p v-else-if="noTenants" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Create a partner first, then their wallet and ledger show up here.
+    </p>
+    <p v-else-if="!tenantId" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      Pick a partner above to see their wallet.
     </p>
 
     <!-- Manual adjustment -->

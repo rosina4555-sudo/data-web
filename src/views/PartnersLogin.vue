@@ -46,8 +46,8 @@ const submit = async () => {
 
       <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Sign in</h1>
       <p class="mt-1 text-xs text-muted">
-        Requires partner management permission. This is a separate console from the
-        main admin panel and uses its own session.
+        DataPadi staff only — managing partners, tiers, wallets and settlements. Requires
+        partner management permission, and uses its own session.
       </p>
 
       <div class="mt-5 space-y-4">
@@ -94,5 +94,11 @@ const submit = async () => {
         {{ loading ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>
+
+    <p class="mt-5 max-w-sm text-center text-xs text-muted">
+      This is not where a partner signs in. If you have your own partner account, your
+      login is on the
+      <a href="#/tenant" class="font-bold text-brand transition hover:text-accent-dark">partner dashboard</a>.
+    </p>
   </div>
 </template>

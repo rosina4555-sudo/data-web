@@ -9,35 +9,48 @@ const TOKEN_KEY = 'dp_token'
 const ADMIN_KEY = 'dp_admin'
 
 /* ── Token management ───────────────────────────────── */
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY)
+// Each key is a parameter so the partner console can keep its own session
+// (dp_partner_token) without disturbing this one. The defaults are what every
+// existing caller already uses, so their behaviour is unchanged.
+export function getToken(key = TOKEN_KEY) {
+  return localStorage.getItem(key)
 }
-export function setToken(token) {
-  localStorage.setItem(TOKEN_KEY, token)
+export function setToken(token, key = TOKEN_KEY) {
+  localStorage.setItem(key, token)
 }
-export function getAdmin() {
+export function getAdmin(key = ADMIN_KEY) {
   try {
-    return JSON.parse(localStorage.getItem(ADMIN_KEY))
+    return JSON.parse(localStorage.getItem(key))
   } catch {
     return null
   }
 }
-export function setAdmin(admin) {
-  localStorage.setItem(ADMIN_KEY, JSON.stringify(admin))
+export function setAdmin(admin, key = ADMIN_KEY) {
+  localStorage.setItem(key, JSON.stringify(admin))
 }
-export function clearAuth() {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(ADMIN_KEY)
+export function clearAuth(tokenKey = TOKEN_KEY, adminKey = ADMIN_KEY) {
+  localStorage.removeItem(tokenKey)
+  localStorage.removeItem(adminKey)
 }
 export function isAuthenticated() {
   return !!getToken()
 }
 
 /* ── Fetch wrapper ──────────────────────────────────── */
-async function request(method, path, body = null, options = {}) {
+/**
+ * Exported so the partner console can share this wrapper — and therefore its
+ * error shaping, its 401 handling and its network-failure message — instead of
+ * growing a second copy that drifts.
+ */
+export async function request(method, path, body = null, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers }
 
-  const token = getToken()
+  // The partner console authenticates with its own stored token against the same
+  // admin API, so which token to send is per-call rather than global.
+  const tokenKey = options.tokenKey || TOKEN_KEY
+  const adminKey = options.adminKey || ADMIN_KEY
+
+  const token = getToken(tokenKey)
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   const config = { method, headers }
@@ -51,8 +64,12 @@ async function request(method, path, body = null, options = {}) {
   }
 
   if (res.status === 401 && !options.allow401) {
-    clearAuth()
-    window.location.hash = '#/admin'
+    // Only the session that just failed is cleared, and only that console is
+    // bounced to its own login — an expired partner token must not log the
+    // operator out of the main admin console they are working in, and vice
+    // versa. Both are separate screens with separate tabs.
+    clearAuth(tokenKey, adminKey)
+    window.location.hash = options.loginRoute || '#/admin'
     window.location.reload()
     throw new Error('Session expired — please log in again.')
   }

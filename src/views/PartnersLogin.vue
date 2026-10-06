@@ -11,6 +11,12 @@ const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 
+// Set by the API wrapper when a session is dropped for lack of permission
+// rather than for having expired — the operator is signed out here with the
+// server's reason, instead of being left in a console of 403s.
+const notice = ref(sessionStorage.getItem('dp_login_notice') || '')
+sessionStorage.removeItem('dp_login_notice')
+
 const submit = async () => {
   if (loading.value) return
   loading.value = true
@@ -34,6 +40,10 @@ const submit = async () => {
     </div>
 
     <form class="clay w-full max-w-sm rounded-3xl bg-surface p-6 sm:p-8" @submit.prevent="submit">
+      <p v-if="notice" class="mb-4 rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-700">
+        {{ notice }}
+      </p>
+
       <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Sign in</h1>
       <p class="mt-1 text-xs text-muted">
         Requires partner management permission. This is a separate console from the

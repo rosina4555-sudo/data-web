@@ -90,6 +90,25 @@ export async function request(method, path, body = null, options = {}) {
         : Array.isArray(detail) && detail.length
           ? detail[0]
           : data?.error
+
+    // A 403 on a console-scoped call means the token is still valid but the
+    // session has lost the capability the whole console is built on — the
+    // partner-management flag being revoked while the screen was open. Clicking
+    // again walks into the same wall, so the session is dropped and its console
+    // returns to its own login with the reason waiting there. Calls with no
+    // loginRoute (the public API) fall through to ordinary error handling: a
+    // refused write is not a lost session.
+    if (res.status === 403 && options.loginRoute && !options.allow403) {
+      clearAuth(tokenKey, adminKey)
+      sessionStorage.setItem(
+        'dp_login_notice',
+        typeof detail === 'string' && detail ? detail : 'Your access to this console was revoked.',
+      )
+      window.location.hash = options.loginRoute
+      window.location.reload()
+      throw new Error('Access revoked — please sign in again.')
+    }
+
     if (data?.error === 'rate_limited' || data?.error === '429') {
       throw new Error('Too many requests. Please wait a moment and try again.')
     }

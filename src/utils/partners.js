@@ -60,6 +60,7 @@ export const AUDIT_META = {
   key_revoked: { label: 'Key revoked', cls: 'bg-red-50 text-red-600' },
   wallet_adjusted: { label: 'Wallet adjusted', cls: 'bg-indigo-50 text-indigo-700' },
   settlement_retry: { label: 'Settlement retry', cls: 'bg-amber-50 text-amber-700' },
+  balance_rebuilt: { label: 'Balance rebuilt', cls: 'bg-teal-50 text-teal-700' },
 }
 
 export const auditMeta = (action) =>

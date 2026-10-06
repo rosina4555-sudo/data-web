@@ -6,18 +6,24 @@ import AdminLogin from './views/AdminLogin.vue'
 import AdminView from './views/AdminView.vue'
 import PartnersLogin from './views/PartnersLogin.vue'
 import PartnersView from './views/PartnersView.vue'
+import TenantLogin from './views/TenantLogin.vue'
+import TenantView from './views/TenantView.vue'
 import ToastHost from './components/ToastHost.vue'
 import { isAuthenticated } from './services/auth'
 import { partnerIsAuthenticated } from './services/partnerApi'
+import { tenantIsAuthenticated } from './services/tenantApi'
 
 const hash = ref(window.location.hash || '#/')
 const authed = ref(false)
 const partnerAuthed = ref(false)
+const tenantAuthed = ref(false)
 const ready = ref(false)
 
-// Two independent sessions. The partner console keeps its own token, so
-// signing in there must not sign the main console in, and a 401 in one must
-// not bounce the other — hence two flags and two checks.
+// Three independent sessions. The partner console keeps its own token, and the
+// tenant dashboard keeps a third that proves "I am this partner", not "I am an
+// operator with partner rights" — so signing in on one must not sign in
+// another, and a 401 in one must not bounce the other two. Hence three flags
+// and three checks.
 //
 // Only the hub that is being entered is checked, and only when it has not been
 // checked already: the server round trip belongs at the door, not on every
@@ -28,6 +34,9 @@ const syncSession = async () => {
   }
   if (hash.value.startsWith('#/partners') && !partnerAuthed.value) {
     partnerAuthed.value = await partnerIsAuthenticated()
+  }
+  if (hash.value.startsWith('#/tenant') && !tenantAuthed.value) {
+    tenantAuthed.value = await tenantIsAuthenticated()
   }
 }
 
@@ -59,6 +68,11 @@ const isPartnersHub = computed(() => hash.value.startsWith('#/partners'))
 const isPartnersLogin = computed(() => isPartnersHub.value && !partnerAuthed.value)
 const isPartnersDashboard = computed(() => isPartnersHub.value && partnerAuthed.value)
 
+// A partner signs into this one with its own account, not as an operator.
+const isTenantHub = computed(() => hash.value.startsWith('#/tenant'))
+const isTenantLogin = computed(() => isTenantHub.value && !tenantAuthed.value)
+const isTenantDashboard = computed(() => isTenantHub.value && tenantAuthed.value)
+
 // A hash nobody handles rendered a blank page, which reads as "broken". The
 // home page is the default destination for anything unrecognised.
 const knownHash = computed(
@@ -77,6 +91,9 @@ const onLogout = () => {
 }
 const onPartnerAuthenticated = () => {
   partnerAuthed.value = true
+}
+const onTenantAuthenticated = () => {
+  tenantAuthed.value = true
 }
 </script>
 
@@ -99,5 +116,7 @@ const onPartnerAuthenticated = () => {
     <AdminView v-else-if="isDashboard" @logout="onLogout" />
     <PartnersLogin v-else-if="isPartnersLogin" @authenticated="onPartnerAuthenticated" />
     <PartnersView v-else-if="isPartnersDashboard" />
+    <TenantLogin v-else-if="isTenantLogin" @authenticated="onTenantAuthenticated" />
+    <TenantView v-else-if="isTenantDashboard" />
   </template>
 </template>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import HomeView from './views/HomeView.vue'
 import TrackOrderView from './views/TrackOrderView.vue'
+import DocsView from './views/DocsView.vue'
 import AdminLogin from './views/AdminLogin.vue'
 import AdminView from './views/AdminView.vue'
 import PartnersLogin from './views/PartnersLogin.vue'
@@ -83,6 +84,7 @@ onUnmounted(() => window.removeEventListener('hashchange', onHash))
 
 const isHome = computed(() => hash.value === '#/' || hash.value === '#/home')
 const isTrack = computed(() => hash.value.startsWith('#/track'))
+const isDocs = computed(() => hash.value.startsWith('#/docs'))
 const isAdminHub = computed(() => hash.value.startsWith('#/admin'))
 const isLogin = computed(() => isAdminHub.value && !authed.value)
 const isDashboard = computed(() => isAdminHub.value && authed.value)
@@ -108,6 +110,7 @@ const knownHash = computed(
   () =>
     isHome.value ||
     isTrack.value ||
+    isDocs.value ||
     isAdminHub.value ||
     isPartnersHub.value,
 )
@@ -141,6 +144,7 @@ const onTenantAuthenticated = () => {
   <template v-else>
     <HomeView v-if="isHome || !knownHash" />
     <TrackOrderView v-else-if="isTrack" />
+    <DocsView v-else-if="isDocs" />
     <AdminLogin v-else-if="isLogin" @authenticated="onAuthenticated" />
     <AdminView v-else-if="isDashboard" @logout="onLogout" />
     <PartnersLogin

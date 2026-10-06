@@ -424,6 +424,7 @@ const priceSummary = computed(() => {
                 <li><a href="#/track" class="transition-colors hover:text-brand">Track order</a></li>
                 <li><a href="#/admin" class="transition-colors hover:text-brand">Admin</a></li>
                 <li><a href="#/partners" class="transition-colors hover:text-brand">Partner console</a></li>
+                <li><a href="#/docs" class="transition-colors hover:text-brand">API docs</a></li>
               </ul>
             </div>
             <div>

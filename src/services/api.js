@@ -142,6 +142,12 @@ export const api = {
   initPayment: (ref, email = null) =>
     request('POST', `/v1/orders/${encodeURIComponent(ref)}/init`, email ? { email } : {}),
   getOrder: (ref) => request('GET', `/v1/orders/${encodeURIComponent(ref)}`),
+  // The published API reference. Public like the rest of this block: it is
+  // read before any credentials exist. allow401 keeps the reader on the page
+  // if a stored token happens to be stale — losing your session must not cost
+  // you the documentation you were reading.
+  getPartnerApiReference: () =>
+    request('GET', '/v1/docs/partner-api', null, { allow401: true }),
   lookup: (query) => {
     const key = query.trim()
     const isRef = /[A-Za-z]/.test(key)

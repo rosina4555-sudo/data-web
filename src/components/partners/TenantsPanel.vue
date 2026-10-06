@@ -175,84 +175,134 @@ const activate = async (tenant) => {
 
     <LoadError :error="error" :busy="loading" @retry="reload" />
 
-    <div class="clay overflow-hidden rounded-2xl bg-surface">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-              <th class="px-4 py-3">Partner</th>
-              <th class="px-4 py-3">Tier</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3 text-right">Balance</th>
-              <th class="px-4 py-3">Refund policy</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="t in tenants"
-              :key="t.id"
-              class="cursor-pointer border-b border-brand/5 transition last:border-0 hover:bg-brand/[0.03]"
-              @click="openTenantId = t.id"
-            >
-              <td class="px-4 py-3">
-                <p class="font-bold text-brand-dark">{{ t.name }}</p>
-                <p class="font-mono text-[10px] text-muted">{{ t.slug }} · {{ t.email }}</p>
-              </td>
-              <td class="px-4 py-3 text-muted">{{ t.account_type?.code || '—' }}</td>
-              <td class="px-4 py-3">
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
-                  :class="tenantStatusMeta(t.status).cls"
-                >
-                  <span class="h-1.5 w-1.5 rounded-full bg-current opacity-70"></span>
-                  {{ tenantStatusMeta(t.status).label }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-right font-semibold">
-                {{ t.wallet ? money(t.wallet.balance_minor) : '—' }}
-              </td>
-              <td class="px-4 py-3">
-                <span v-if="t.auto_refund_on_failure" class="text-[11px] font-semibold text-emerald-600">
-                  Auto · after {{ t.auto_refund_after_minutes }}m
-                </span>
-                <span v-else class="text-[11px] text-muted">Manual</span>
-              </td>
-              <td class="px-4 py-3 text-right" @click.stop>
-                <button
-                  v-if="t.status === 'active'"
-                  type="button"
-                  class="rounded-lg px-2 py-1 text-[11px] font-bold text-amber-600 transition hover:bg-amber-50"
-                  @click="suspend(t)"
-                >
-                  Suspend
-                </button>
-                <button
-                  v-else-if="t.status === 'suspended'"
-                  type="button"
-                  class="rounded-lg px-2 py-1 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-50"
-                  @click="activate(t)"
-                >
-                  Reactivate
-                </button>
-                <span v-else class="text-[11px] text-muted">Closed</span>
-              </td>
-            </tr>
-                        <tr v-if="loading">
-              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
-            </tr>
-<tr v-if="!loading && !tenants.length">
-              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">
-                No partners match that filter.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <p v-if="loading" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">Loading…</p>
+
+    <p v-else-if="!tenants.length" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+      No partners match that filter.
+    </p>
+
+    <template v-else>
+      <!-- Desktop table -->
+      <div class="clay hidden overflow-hidden rounded-2xl bg-surface lg:block">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                <th class="px-4 py-3">Partner</th>
+                <th class="px-4 py-3">Tier</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Balance</th>
+                <th class="px-4 py-3">Refund policy</th>
+                <th class="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="t in tenants"
+                :key="t.id"
+                class="cursor-pointer border-b border-brand/5 transition last:border-0 hover:bg-brand/[0.03]"
+                @click="openTenantId = t.id"
+              >
+                <td class="px-4 py-3">
+                  <p class="font-bold text-brand-dark">{{ t.name }}</p>
+                  <p class="font-mono text-[10px] text-muted">{{ t.slug }} · {{ t.email }}</p>
+                </td>
+                <td class="px-4 py-3 text-muted">{{ t.account_type?.code || '—' }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                    :class="tenantStatusMeta(t.status).cls"
+                  >
+                    <span class="h-1.5 w-1.5 rounded-full bg-current opacity-70"></span>
+                    {{ tenantStatusMeta(t.status).label }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-semibold">
+                  {{ t.wallet ? money(t.wallet.balance_minor) : '—' }}
+                </td>
+                <td class="px-4 py-3">
+                  <span v-if="t.auto_refund_on_failure" class="text-[11px] font-semibold text-emerald-600">
+                    Auto · after {{ t.auto_refund_after_minutes }}m
+                  </span>
+                  <span v-else class="text-[11px] text-muted">Manual</span>
+                </td>
+                <td class="px-4 py-3 text-right" @click.stop>
+                  <button
+                    v-if="t.status === 'active'"
+                    type="button"
+                    class="rounded-lg px-2 py-1 text-[11px] font-bold text-amber-600 transition hover:bg-amber-50"
+                    @click="suspend(t)"
+                  >
+                    Suspend
+                  </button>
+                  <button
+                    v-else-if="t.status === 'suspended'"
+                    type="button"
+                    class="rounded-lg px-2 py-1 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-50"
+                    @click="activate(t)"
+                  >
+                    Reactivate
+                  </button>
+                  <span v-else class="text-[11px] text-muted">Closed</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="px-4 pb-3">
+
+      <!-- Mobile cards: the table scrolls sideways on a phone, which hides the
+           balance and refund policy until you drag. -->
+      <ul class="space-y-3 lg:hidden">
+        <li v-for="t in tenants" :key="t.id" class="clay rounded-2xl bg-surface p-4">
+          <button type="button" class="flex w-full items-start justify-between gap-3 text-left" @click="openTenantId = t.id">
+            <span class="min-w-0">
+              <span class="block truncate font-heading text-sm font-bold text-brand-dark">{{ t.name }}</span>
+              <span class="block truncate font-mono text-[10px] text-muted">{{ t.slug }} · {{ t.email }}</span>
+              <span class="mt-1.5 block text-[11px] text-muted">
+                {{ t.account_type?.code || '—' }} · {{ t.wallet ? money(t.wallet.balance_minor) : '—' }}
+              </span>
+              <span class="mt-0.5 block text-[11px]">
+                <span v-if="t.auto_refund_on_failure" class="font-semibold text-emerald-600">
+                  Auto refund · after {{ t.auto_refund_after_minutes }}m
+                </span>
+                <span v-else class="text-muted">Manual refunds</span>
+              </span>
+            </span>
+            <span
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+              :class="tenantStatusMeta(t.status).cls"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-current opacity-70"></span>
+              {{ tenantStatusMeta(t.status).label }}
+            </span>
+          </button>
+          <div class="mt-3 flex justify-end border-t border-brand/5 pt-2.5" @click.stop>
+            <button
+              v-if="t.status === 'active'"
+              type="button"
+              class="rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-amber-600 transition hover:bg-amber-50"
+              @click="suspend(t)"
+            >
+              Suspend
+            </button>
+            <button
+              v-else-if="t.status === 'suspended'"
+              type="button"
+              class="rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-50"
+              @click="activate(t)"
+            >
+              Reactivate
+            </button>
+            <span v-else class="text-[11px] text-muted">Closed</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="pt-1">
         <Pagination v-model:page="page" :total-pages="meta.last_page" :total="meta.total" />
       </div>
-    </div>
+    </template>
 
     <TenantSheet
       v-if="openTenantId"

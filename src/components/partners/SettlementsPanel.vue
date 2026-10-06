@@ -110,68 +110,108 @@ const retry = async (row) => {
 
     <LoadError :error="error" :busy="loading" @retry="load" />
 
-    <div v-if="tenantId" class="clay overflow-hidden rounded-2xl bg-surface">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-              <th class="px-4 py-3">Order</th>
-              <th class="px-4 py-3">Kind</th>
-              <th class="px-4 py-3 text-right">Amount</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3 text-right">Attempts</th>
-              <th class="px-4 py-3">Last error</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in rows" :key="row.id" class="border-b border-brand/5 last:border-0">
-              <td class="px-4 py-3 font-mono text-[11px] font-semibold text-brand-dark">
-                {{ row.order_reference || `#${row.order_id}` }}
-              </td>
-              <td class="px-4 py-3 text-muted">{{ row.kind }}</td>
-              <td class="px-4 py-3 text-right font-bold text-brand-dark">{{ money(row.amount_minor) }}</td>
-              <td class="px-4 py-3">
-                <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="settlementMeta(row.status).cls">
+    <div v-if="tenantId" class="space-y-3">
+      <p v-if="loading" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">Loading…</p>
+
+      <p v-else-if="!rows.length" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+        Nothing waiting. Queued rows appear here until they are paid.
+      </p>
+
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="clay hidden overflow-hidden rounded-2xl bg-surface lg:block">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                  <th class="px-4 py-3">Order</th>
+                  <th class="px-4 py-3">Kind</th>
+                  <th class="px-4 py-3 text-right">Amount</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Attempts</th>
+                  <th class="px-4 py-3">Last error</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in rows" :key="row.id" class="border-b border-brand/5 last:border-0">
+                  <td class="px-4 py-3 font-mono text-[11px] font-semibold text-brand-dark">
+                    {{ row.order_reference || `#${row.order_id}` }}
+                  </td>
+                  <td class="px-4 py-3 text-muted">{{ row.kind }}</td>
+                  <td class="px-4 py-3 text-right font-bold text-brand-dark">{{ money(row.amount_minor) }}</td>
+                  <td class="px-4 py-3">
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="settlementMeta(row.status).cls">
+                      {{ settlementMeta(row.status).label }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right text-[11px] font-semibold" :class="row.attempts >= 5 ? 'text-amber-600' : 'text-muted'">
+                    {{ row.attempts }}
+                  </td>
+                  <td class="max-w-64 px-4 py-3">
+                    <span v-if="row.last_error" class="line-clamp-2 text-[11px] text-red-600">{{ row.last_error }}</span>
+                    <span v-else class="text-[11px] text-muted">—</span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      v-if="isRetryable(row)"
+                      type="button"
+                      :disabled="retryingId !== null"
+                      class="rounded-lg bg-brand/10 px-2.5 py-1 text-[11px] font-bold text-brand transition hover:bg-brand/20 disabled:opacity-50"
+                      @click="retry(row)"
+                    >
+                      {{ retryingId === row.id ? 'Retrying…' : 'Retry now' }}
+                    </button>
+                    <span v-else-if="row.applied_at" class="text-[10px] text-muted">
+                      {{ formatDateTime(row.applied_at) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile cards: the reason a settlement is stuck is the last_error
+             column, which is the first thing a seven-column table drops. -->
+        <ul class="space-y-3 lg:hidden">
+          <li v-for="row in rows" :key="row.id" class="clay rounded-2xl bg-surface p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-mono text-[11px] font-semibold text-brand-dark">
+                  {{ row.order_reference || `#${row.order_id}` }}
+                </p>
+                <p class="mt-0.5 text-[11px] text-muted">
+                  {{ row.kind }} · {{ row.attempts }} attempt<span v-if="row.attempts !== 1">s</span>
+                </p>
+              </div>
+              <div class="shrink-0 text-right">
+                <p class="font-heading text-sm font-black text-brand-dark">{{ money(row.amount_minor) }}</p>
+                <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="settlementMeta(row.status).cls">
                   {{ settlementMeta(row.status).label }}
                 </span>
-              </td>
-              <td class="px-4 py-3 text-right text-[11px] font-semibold" :class="row.attempts >= 5 ? 'text-amber-600' : 'text-muted'">
-                {{ row.attempts }}
-              </td>
-              <td class="max-w-64 px-4 py-3">
-                <span v-if="row.last_error" class="line-clamp-2 text-[11px] text-red-600">{{ row.last_error }}</span>
-                <span v-else class="text-[11px] text-muted">—</span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  v-if="isRetryable(row)"
-                  type="button"
-                  :disabled="retryingId !== null"
-                  class="rounded-lg bg-brand/10 px-2.5 py-1 text-[11px] font-bold text-brand transition hover:bg-brand/20 disabled:opacity-50"
-                  @click="retry(row)"
-                >
-                  {{ retryingId === row.id ? 'Retrying…' : 'Retry now' }}
-                </button>
-                <span v-else-if="row.applied_at" class="text-[10px] text-muted">
-                  {{ formatDateTime(row.applied_at) }}
-                </span>
-              </td>
-            </tr>
-                        <tr v-if="loading">
-              <td colspan="7" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
-            </tr>
-<tr v-if="!loading && !rows.length">
-              <td colspan="7" class="px-4 py-8 text-center text-xs text-muted">
-                Nothing waiting. Queued rows appear here until they are paid.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="px-4 pb-3">
-        <Pagination v-model:page="page" :total-pages="meta.last_page" :total="meta.total" />
-      </div>
+              </div>
+            </div>
+            <p v-if="row.last_error" class="mt-2 line-clamp-3 text-[11px] font-medium text-red-600">{{ row.last_error }}</p>
+            <div class="mt-3 flex items-center justify-between gap-3 border-t border-brand/5 pt-2.5">
+              <span class="text-[10px] text-muted">{{ row.applied_at ? 'paid ' + formatDateTime(row.applied_at) : '' }}</span>
+              <button
+                v-if="isRetryable(row)"
+                type="button"
+                :disabled="retryingId !== null"
+                class="rounded-lg bg-brand/10 px-2.5 py-1.5 text-[11px] font-bold text-brand transition hover:bg-brand/20 disabled:opacity-50"
+                @click="retry(row)"
+              >
+                {{ retryingId === row.id ? 'Retrying…' : 'Retry now' }}
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <div class="pt-1">
+          <Pagination v-model:page="page" :total-pages="meta.last_page" :total="meta.total" />
+        </div>
+      </template>
     </div>
 
     <p v-else-if="noTenants" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">

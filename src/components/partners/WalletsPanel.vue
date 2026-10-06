@@ -209,47 +209,72 @@ const submitAdjust = async () => {
             <option value="debit">Debits</option>
           </select>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3 text-right">Amount</th>
-                <th class="px-4 py-3 text-right">Balance after</th>
-                <th class="px-4 py-3">Reason</th>
-                <th class="px-4 py-3">Reference</th>
-                <th class="px-4 py-3 text-right">When</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="e in entries" :key="e.id" class="border-b border-brand/5 last:border-0">
-                <td class="px-4 py-3">
+
+        <p v-if="loading" class="px-4 py-10 text-center text-xs text-muted">Loading…</p>
+        <p v-else-if="!entries.length" class="px-4 py-10 text-center text-xs text-muted">No movements yet.</p>
+
+        <template v-else>
+          <!-- Desktop table -->
+          <div class="hidden overflow-x-auto lg:block">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                  <th class="px-4 py-3">Type</th>
+                  <th class="px-4 py-3 text-right">Amount</th>
+                  <th class="px-4 py-3 text-right">Balance after</th>
+                  <th class="px-4 py-3">Reason</th>
+                  <th class="px-4 py-3">Reference</th>
+                  <th class="px-4 py-3 text-right">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="e in entries" :key="e.id" class="border-b border-brand/5 last:border-0">
+                  <td class="px-4 py-3">
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="entryMeta(e.type).cls">
+                      {{ entryMeta(e.type).label }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-bold" :class="e.direction === 'credit' ? 'text-emerald-600' : 'text-red-600'">
+                    {{ e.direction === 'credit' ? '+' : '−' }}{{ money(e.amount_minor) }}
+                  </td>
+                  <td class="px-4 py-3 text-right font-semibold text-brand-dark">{{ money(e.balance_after_minor) }}</td>
+                  <td class="max-w-52 px-4 py-3 text-[11px] text-ink/70">
+                    <span class="line-clamp-2">{{ e.reason || '—' }}</span>
+                  </td>
+                  <td class="px-4 py-3 font-mono text-[10px] text-muted">{{ e.reference || '—' }}</td>
+                  <td class="px-4 py-3 text-right text-[11px] text-muted">{{ formatDateTime(e.created_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards: a ledger row is only readable if the reason and the
+               balance after it stay together, which a sideways scroll breaks. -->
+          <ul class="space-y-2 p-3 lg:hidden">
+            <li v-for="e in entries" :key="e.id" class="rounded-xl bg-bg p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
                   <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold" :class="entryMeta(e.type).cls">
                     {{ entryMeta(e.type).label }}
                   </span>
-                </td>
-                <td class="px-4 py-3 text-right font-bold" :class="e.direction === 'credit' ? 'text-emerald-600' : 'text-red-600'">
-                  {{ e.direction === 'credit' ? '+' : '−' }}{{ money(e.amount_minor) }}
-                </td>
-                <td class="px-4 py-3 text-right font-semibold text-brand-dark">{{ money(e.balance_after_minor) }}</td>
-                <td class="max-w-52 px-4 py-3 text-[11px] text-ink/70">
-                  <span class="line-clamp-2">{{ e.reason || '—' }}</span>
-                </td>
-                <td class="px-4 py-3 font-mono text-[10px] text-muted">{{ e.reference || '—' }}</td>
-                <td class="px-4 py-3 text-right text-[11px] text-muted">{{ formatDateTime(e.created_at) }}</td>
-              </tr>
-                          <tr v-if="loading">
-              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
-            </tr>
-<tr v-if="!loading && !entries.length">
-                <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">No movements yet.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="px-4 pb-3">
-          <Pagination v-model:page="page" :total-pages="meta.last_page" :total="meta.total" />
-        </div>
+                  <p class="mt-1.5 text-[11px] leading-snug text-ink/70">{{ e.reason || '—' }}</p>
+                  <p class="mt-1 font-mono text-[10px] text-muted">{{ e.reference || '—' }}</p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="font-heading text-sm font-black" :class="e.direction === 'credit' ? 'text-emerald-600' : 'text-red-600'">
+                    {{ e.direction === 'credit' ? '+' : '−' }}{{ money(e.amount_minor) }}
+                  </p>
+                  <p class="mt-0.5 text-[10px] text-muted">after {{ money(e.balance_after_minor) }}</p>
+                </div>
+              </div>
+              <p class="mt-2 border-t border-brand/5 pt-2 text-right text-[10px] text-muted">{{ formatDateTime(e.created_at) }}</p>
+            </li>
+          </ul>
+
+          <div class="px-4 pb-3">
+            <Pagination v-model:page="page" :total-pages="meta.last_page" :total="meta.total" />
+          </div>
+        </template>
       </div>
     </template>
 

@@ -132,51 +132,79 @@ onMounted(load)
             not the discount we gave them.
           </p>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-                <th class="px-4 py-3">Partner</th>
-                <th class="px-4 py-3">Tier</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 text-right">Orders</th>
-                <th class="px-4 py-3 text-right">Delivered</th>
-                <th class="px-4 py-3 text-right">GMV</th>
-                <th class="px-4 py-3 text-right">Our margin</th>
-                <th class="px-4 py-3 text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in revenue" :key="row.tenant_id" class="border-b border-brand/5 last:border-0">
-                <td class="px-4 py-3">
-                  <p class="font-bold text-brand-dark">{{ row.tenant_name }}</p>
-                  <p class="font-mono text-[10px] text-muted">{{ row.tenant_slug }}</p>
-                </td>
-                <td class="px-4 py-3 text-muted">{{ row.tier_code || '—' }}</td>
-                <td class="px-4 py-3">
-                  <span class="text-[11px] font-bold" :class="row.tenant_status === 'active' ? 'text-emerald-600' : 'text-amber-600'">
-                    {{ row.tenant_status }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-right font-semibold">{{ row.orders }}</td>
-                <td class="px-4 py-3 text-right font-semibold">{{ row.success_rate }}%</td>
-                <td class="px-4 py-3 text-right font-semibold">{{ money(row.partner_gmv_minor) }}</td>
-                <td class="px-4 py-3 text-right">
-                  <span class="font-bold" :class="row.our_margin_minor < 0 ? 'text-red-600' : 'text-emerald-600'">
+        <p v-if="!revenue.length" class="px-4 py-10 text-center text-xs text-muted">
+          No partners yet. Create one from the Partners tab to get started.
+        </p>
+
+        <template v-else>
+          <!-- Desktop table -->
+          <div class="hidden overflow-x-auto lg:block">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                  <th class="px-4 py-3">Partner</th>
+                  <th class="px-4 py-3">Tier</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Orders</th>
+                  <th class="px-4 py-3 text-right">Delivered</th>
+                  <th class="px-4 py-3 text-right">GMV</th>
+                  <th class="px-4 py-3 text-right">Our margin</th>
+                  <th class="px-4 py-3 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in revenue" :key="row.tenant_id" class="border-b border-brand/5 last:border-0">
+                  <td class="px-4 py-3">
+                    <p class="font-bold text-brand-dark">{{ row.tenant_name }}</p>
+                    <p class="font-mono text-[10px] text-muted">{{ row.tenant_slug }}</p>
+                  </td>
+                  <td class="px-4 py-3 text-muted">{{ row.tier_code || '—' }}</td>
+                  <td class="px-4 py-3">
+                    <span class="text-[11px] font-bold" :class="row.tenant_status === 'active' ? 'text-emerald-600' : 'text-amber-600'">
+                      {{ row.tenant_status }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ row.orders }}</td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ row.success_rate }}%</td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ money(row.partner_gmv_minor) }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <span class="font-bold" :class="row.our_margin_minor < 0 ? 'text-red-600' : 'text-emerald-600'">
+                      {{ money(row.our_margin_minor) }}
+                    </span>
+                    <span v-if="row.margin_pct !== null" class="block text-[10px] text-muted">{{ row.margin_pct }}%</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-semibold">{{ money(row.wallet_balance_minor) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards: GMV, margin and balance are the three numbers this
+               panel exists to show, and an eight-column table hides all three. -->
+          <ul class="space-y-2 p-3 lg:hidden">
+            <li v-for="row in revenue" :key="row.tenant_id" class="rounded-xl bg-bg p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate font-heading text-sm font-bold text-brand-dark">{{ row.tenant_name }}</p>
+                  <p class="truncate font-mono text-[10px] text-muted">
+                    {{ row.tenant_slug }} · {{ row.tier_code || '—' }}
+                  </p>
+                  <p class="mt-1 text-[11px] font-bold" :class="row.tenant_status === 'active' ? 'text-emerald-600' : 'text-amber-600'">
+                    {{ row.tenant_status }} · {{ row.orders }} orders · {{ row.success_rate }}% delivered
+                  </p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="font-heading text-sm font-black text-brand-dark">{{ money(row.partner_gmv_minor) }}</p>
+                  <p class="mt-0.5 text-[11px] font-bold" :class="row.our_margin_minor < 0 ? 'text-red-600' : 'text-emerald-600'">
                     {{ money(row.our_margin_minor) }}
-                  </span>
-                  <span v-if="row.margin_pct !== null" class="block text-[10px] text-muted">{{ row.margin_pct }}%</span>
-                </td>
-                <td class="px-4 py-3 text-right font-semibold">{{ money(row.wallet_balance_minor) }}</td>
-              </tr>
-              <tr v-if="!revenue.length">
-                <td colspan="8" class="px-4 py-8 text-center text-xs text-muted">
-                  No partners yet. Create one from the Partners tab to get started.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                    <span v-if="row.margin_pct !== null"> · {{ row.margin_pct }}%</span>
+                  </p>
+                  <p class="mt-0.5 text-[10px] text-muted">balance {{ money(row.wallet_balance_minor) }}</p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </template>
       </div>
     </template>
 

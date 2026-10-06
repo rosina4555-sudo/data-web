@@ -197,67 +197,106 @@ const closeSecret = () => {
         </button>
       </div>
 
-      <div class="clay overflow-hidden rounded-2xl bg-surface">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-                <th class="px-4 py-3">Key</th>
-                <th class="px-4 py-3">Prefix</th>
-                <th class="px-4 py-3">Scopes</th>
-                <th class="px-4 py-3">State</th>
-                <th class="px-4 py-3">Last used</th>
-                <th class="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="key in keys" :key="key.id" class="border-b border-brand/5 last:border-0">
-                <td class="px-4 py-3 font-bold text-brand-dark">{{ key.label }}</td>
-                <td class="px-4 py-3 font-mono text-[11px] text-muted">{{ key.key_prefix }}</td>
-                <td class="px-4 py-3">
-                  <span class="flex flex-wrap gap-1">
+      <p v-if="loading" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">Loading…</p>
+
+      <p v-else-if="!keys.length" class="clay rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+        No keys for this partner yet.
+      </p>
+
+      <template v-else>
+        <!-- Desktop table -->
+        <div class="clay hidden overflow-hidden rounded-2xl bg-surface lg:block">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                  <th class="px-4 py-3">Key</th>
+                  <th class="px-4 py-3">Prefix</th>
+                  <th class="px-4 py-3">Scopes</th>
+                  <th class="px-4 py-3">State</th>
+                  <th class="px-4 py-3">Last used</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="key in keys" :key="key.id" class="border-b border-brand/5 last:border-0">
+                  <td class="px-4 py-3 font-bold text-brand-dark">{{ key.label }}</td>
+                  <td class="px-4 py-3 font-mono text-[11px] text-muted">{{ key.key_prefix }}</td>
+                  <td class="px-4 py-3">
+                    <span class="flex flex-wrap gap-1">
+                      <span
+                        v-for="s in key.scopes"
+                        :key="s"
+                        class="rounded-md bg-brand/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold"
+                        :class="s === 'wallet:topup' || s === 'orders:write' ? 'text-amber-700' : 'text-muted'"
+                      >{{ s }}</span>
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
                     <span
-                      v-for="s in key.scopes"
-                      :key="s"
-                      class="rounded-md bg-brand/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold"
-                      :class="s === 'wallet:topup' || s === 'orders:write' ? 'text-amber-700' : 'text-muted'"
-                    >{{ s }}</span>
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-extrabold"
-                    :class="key.revoked_at ? 'bg-slate-100 text-slate-500' : key.usable ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
-                  >
-                    {{ key.revoked_at ? 'Revoked' : key.usable ? 'Live' : 'Expired' }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-[11px] text-muted">
-                  {{ key.last_used_at ? formatDateTime(key.last_used_at) : 'Never' }}
-                </td>
-                <td class="px-4 py-3 text-right">
-                  <button
-                    v-if="!key.revoked_at"
-                    type="button"
-                    class="rounded-lg px-2 py-1 text-[11px] font-bold text-red-500 transition hover:bg-red-50"
-                    @click="revoke(key)"
-                  >
-                    Revoke
-                  </button>
-                </td>
-              </tr>
-                          <tr v-if="loading">
-              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
-            </tr>
-<tr v-if="!loading && !keys.length">
-                <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">
-                  No keys for this partner yet.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      class="rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                      :class="key.revoked_at ? 'bg-slate-100 text-slate-500' : key.usable ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+                    >
+                      {{ key.revoked_at ? 'Revoked' : key.usable ? 'Live' : 'Expired' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-[11px] text-muted">
+                    {{ key.last_used_at ? formatDateTime(key.last_used_at) : 'Never' }}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      v-if="!key.revoked_at"
+                      type="button"
+                      class="rounded-lg px-2 py-1 text-[11px] font-bold text-red-500 transition hover:bg-red-50"
+                      @click="revoke(key)"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+
+        <!-- Mobile cards: scopes and state are the point of this list, and
+             neither survives a six-column table squeezed onto a phone. -->
+        <ul class="space-y-3 lg:hidden">
+          <li v-for="key in keys" :key="key.id" class="clay rounded-2xl bg-surface p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="truncate font-heading text-sm font-bold text-brand-dark">{{ key.label }}</p>
+                <p class="mt-0.5 truncate font-mono text-[10px] text-muted">
+                  {{ key.key_prefix }} · {{ key.last_used_at ? 'last used ' + formatDateTime(key.last_used_at) : 'never used' }}
+                </p>
+              </div>
+              <span
+                class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                :class="key.revoked_at ? 'bg-slate-100 text-slate-500' : key.usable ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+              >
+                {{ key.revoked_at ? 'Revoked' : key.usable ? 'Live' : 'Expired' }}
+              </span>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1">
+              <span
+                v-for="s in key.scopes"
+                :key="s"
+                class="rounded-md bg-brand/5 px-1.5 py-0.5 font-mono text-[10px] font-semibold"
+                :class="s === 'wallet:topup' || s === 'orders:write' ? 'text-amber-700' : 'text-muted'"
+              >{{ s }}</span>
+            </div>
+            <div v-if="!key.revoked_at" class="mt-3 flex justify-end border-t border-brand/5 pt-2.5">
+              <button
+                type="button"
+                class="rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-red-500 transition hover:bg-red-50"
+                @click="revoke(key)"
+              >
+                Revoke
+              </button>
+            </div>
+          </li>
+        </ul>
+      </template>
     </template>
 
     <p v-else-if="noTenants" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">

@@ -507,42 +507,68 @@ const saveDetails = async () => {
 
           <!-- Orders -->
           <div v-else-if="tab === 'orders'">
-            <div class="overflow-hidden rounded-xl border border-brand/10">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
-                    <th class="px-3 py-2.5">Reference</th>
-                    <th class="px-3 py-2.5">Network</th>
-                    <th class="px-3 py-2.5 text-right">Amount</th>
-                    <th class="px-3 py-2.5">Status</th>
-                    <th class="px-3 py-2.5 text-right">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="o in orders"
-                    :key="o.id"
-                    class="cursor-pointer border-b border-brand/5 transition last:border-0 hover:bg-brand/5"
-                    tabindex="0"
-                    @click="selectedOrder = o.id"
-                    @keydown.enter="selectedOrder = o.id"
-                  >
-                    <td class="px-3 py-2.5 font-mono text-[11px] font-semibold text-brand-dark">{{ o.reference }}</td>
-                    <td class="px-3 py-2.5 text-muted">{{ o.network }}</td>
-                    <td class="px-3 py-2.5 text-right font-semibold">{{ money(o.amount_minor) }}</td>
-                    <td class="px-3 py-2.5">
-                      <span class="text-[10px] font-extrabold" :class="o.status === 'success' ? 'text-emerald-600' : o.status === 'failed' ? 'text-red-600' : 'text-amber-600'">
+            <p v-if="!orders.length" class="rounded-xl border border-brand/10 py-8 text-center text-xs text-muted">
+              No orders yet.
+            </p>
+
+            <template v-else>
+              <!-- Desktop table -->
+              <div class="hidden overflow-hidden rounded-xl border border-brand/10 lg:block">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-brand/10 bg-bg/60 text-[10px] font-extrabold tracking-widest text-muted uppercase">
+                      <th class="px-3 py-2.5">Reference</th>
+                      <th class="px-3 py-2.5">Network</th>
+                      <th class="px-3 py-2.5 text-right">Amount</th>
+                      <th class="px-3 py-2.5">Status</th>
+                      <th class="px-3 py-2.5 text-right">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="o in orders"
+                      :key="o.id"
+                      class="cursor-pointer border-b border-brand/5 transition last:border-0 hover:bg-brand/5"
+                      tabindex="0"
+                      @click="selectedOrder = o.id"
+                      @keydown.enter="selectedOrder = o.id"
+                    >
+                      <td class="px-3 py-2.5 font-mono text-[11px] font-semibold text-brand-dark">{{ o.reference }}</td>
+                      <td class="px-3 py-2.5 text-muted">{{ o.network }}</td>
+                      <td class="px-3 py-2.5 text-right font-semibold">{{ money(o.amount_minor) }}</td>
+                      <td class="px-3 py-2.5">
+                        <span class="text-[10px] font-extrabold" :class="o.status === 'success' ? 'text-emerald-600' : o.status === 'failed' ? 'text-red-600' : 'text-amber-600'">
+                          {{ o.status }}
+                        </span>
+                      </td>
+                      <td class="px-3 py-2.5 text-right text-[11px] text-muted">{{ formatDateTime(o.created_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile cards: tapping one opens the same detail sheet. -->
+              <ul class="space-y-2 lg:hidden">
+                <li v-for="o in orders" :key="o.id" class="rounded-xl border border-brand/10">
+                  <button type="button" class="flex w-full items-start justify-between gap-3 p-3 text-left" @click="selectedOrder = o.id">
+                    <span class="min-w-0">
+                      <span class="block font-mono text-[11px] font-semibold text-brand-dark">{{ o.reference }}</span>
+                      <span class="mt-0.5 block truncate text-[11px] text-muted">{{ o.network }} · {{ formatDateTime(o.created_at) }}</span>
+                    </span>
+                    <span class="shrink-0 text-right">
+                      <span class="block font-heading text-sm font-black text-brand-dark">{{ money(o.amount_minor) }}</span>
+                      <span
+                        class="mt-1 block text-[10px] font-extrabold"
+                        :class="o.status === 'success' ? 'text-emerald-600' : o.status === 'failed' ? 'text-red-600' : 'text-amber-600'"
+                      >
                         {{ o.status }}
                       </span>
-                    </td>
-                    <td class="px-3 py-2.5 text-right text-[11px] text-muted">{{ formatDateTime(o.created_at) }}</td>
-                  </tr>
-                  <tr v-if="!orders.length">
-                    <td colspan="5" class="px-3 py-8 text-center text-xs text-muted">No orders yet.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    </span>
+                  </button>
+                </li>
+              </ul>
+            </template>
+
             <Pagination v-model:page="orderPage" :total-pages="orderMeta.last_page" :total="orderMeta.total" />
           </div>
 

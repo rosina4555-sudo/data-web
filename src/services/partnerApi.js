@@ -140,6 +140,7 @@ export const partnerApi = {
   changeAccountType: (id, accountTypeId, reason = '') =>
     call('POST', `/tenants/${id}/account-type`, { account_type_id: accountTypeId, reason }),
   getTenantOrders: (id, params) => call('GET', `/tenants/${id}/orders${qs(params)}`),
+  getTenantOrder: (id, orderId) => call('GET', `/tenants/${id}/orders/${orderId}`),
   getTenantAudit: (id, params) => call('GET', `/tenants/${id}/audit${qs(params)}`),
 
   /* API keys */

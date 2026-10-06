@@ -13,6 +13,7 @@ import { toast } from '../../services/toast'
 import { tenantStatusMeta, auditMeta, money } from '../../utils/partners'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
+import OrderSheet from './OrderSheet.vue'
 
 const props = defineProps({
   tenantId: { type: Number, required: true },
@@ -30,6 +31,11 @@ const auditPages = ref({ current_page: 1, last_page: 1, total: 0 })
 const auditPage = ref(1)
 const loading = ref(true)
 const error = ref('')
+
+// An order opens its own sheet rather than expanding here: the detail comes
+// from a scoped endpoint, and keeping it separate leaves this list cheap to
+// re-render when the page changes.
+const selectedOrder = ref(null)
 
 const busy = ref(false)
 const changingTier = ref(false)
@@ -121,6 +127,93 @@ const saveTier = async () => {
     changingTier.value = false
   }
 }
+
+/* ── Contact & limits ────────────────────────────────────
+ * Everything here is a plain field update: no tier, no status, no balance.
+ * Lifecycle stays behind the audited buttons below and the tier stays behind
+ * its own, because those are the two edits worth a history entry. A typo in a
+ * phone number is not. */
+
+const editingDetails = ref(false)
+const savingDetails = ref(false)
+const details = ref(null)
+const detailsError = ref('')
+
+const toMajor = (minor) => (Number(minor || 0) / 100).toFixed(2)
+const toMinor = (value) => {
+  const n = Number(String(value ?? '').trim())
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null
+}
+
+const openDetails = () => {
+  details.value = {
+    name: tenant.value.name ?? '',
+    email: tenant.value.email ?? '',
+    phone: tenant.value.phone ?? '',
+    wallet_floor: toMajor(tenant.value.min_balance_minor),
+    min_topup: toMajor(tenant.value.min_topup_minor),
+    rate_limit: Number(tenant.value.rate_limit_per_min ?? 0),
+    auto_refund: !!tenant.value.auto_refund_on_failure,
+    refund_minutes: Number(tenant.value.auto_refund_after_minutes ?? 0),
+  }
+  detailsError.value = ''
+  editingDetails.value = true
+}
+
+const closeDetails = () => {
+  editingDetails.value = false
+  detailsError.value = ''
+}
+
+const saveDetails = async () => {
+  if (savingDetails.value) return
+
+  const d = details.value
+  const name = String(d.name).trim()
+  const email = String(d.email).trim()
+
+  if (!name || !email) {
+    detailsError.value = 'Name and email are required.'
+    return
+  }
+
+  const payload = {
+    name,
+    email,
+    phone: String(d.phone).trim(),
+    min_balance_minor: toMinor(d.wallet_floor),
+    min_topup_minor: toMinor(d.min_topup),
+    rate_limit_per_min: Number(d.rate_limit),
+    auto_refund_on_failure: !!d.auto_refund,
+    auto_refund_after_minutes: Number(d.refund_minutes),
+  }
+
+  if (payload.min_balance_minor === null || payload.min_topup_minor === null) {
+    detailsError.value = 'Amounts must be zero or more.'
+    return
+  }
+  if (!Number.isInteger(payload.rate_limit_per_min) || payload.rate_limit_per_min < 1) {
+    detailsError.value = 'Rate limit must be at least 1 request per minute.'
+    return
+  }
+  if (!Number.isInteger(payload.auto_refund_after_minutes) || payload.auto_refund_after_minutes < 0) {
+    detailsError.value = 'Auto-refund delay must be a whole number of minutes.'
+    return
+  }
+
+  savingDetails.value = true
+  detailsError.value = ''
+  try {
+    await partnerApi.updateTenant(tenant.value.id, payload)
+    toast('Partner details saved', 'success')
+    closeDetails()
+    afterChange()
+  } catch (err) {
+    detailsError.value = err?.message || 'Could not save these details.'
+  } finally {
+    savingDetails.value = false
+  }
+}
 </script>
 
 <template>
@@ -185,7 +278,19 @@ const saveTier = async () => {
               </span>
             </div>
 
-            <dl class="grid grid-cols-2 gap-3">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="font-heading text-xs font-bold tracking-tight text-muted">Contact &amp; limits</h3>
+              <button
+                v-if="!editingDetails"
+                type="button"
+                class="clay-btn-light rounded-xl bg-surface px-3 py-1.5 text-[11px] font-bold text-brand-dark transition"
+                @click="openDetails"
+              >
+                Edit details
+              </button>
+            </div>
+
+            <dl v-if="!editingDetails" class="grid grid-cols-2 gap-3">
               <div class="clay-sm rounded-xl bg-bg p-3">
                 <dt class="text-[10px] font-bold tracking-widest text-muted uppercase">Email</dt>
                 <dd class="mt-0.5 truncate text-xs font-semibold text-brand-dark">{{ tenant.email }}</dd>
@@ -199,10 +304,18 @@ const saveTier = async () => {
                 <dd class="mt-0.5 text-xs font-semibold text-brand-dark">{{ money(tenant.min_topup_minor) }}</dd>
               </div>
               <div class="clay-sm rounded-xl bg-bg p-3">
+                <dt class="text-[10px] font-bold tracking-widest text-muted uppercase">Wallet floor</dt>
+                <dd class="mt-0.5 text-xs font-semibold text-brand-dark">{{ money(tenant.min_balance_minor) }}</dd>
+              </div>
+              <div class="clay-sm rounded-xl bg-bg p-3">
                 <dt class="text-[10px] font-bold tracking-widest text-muted uppercase">Failed-order refunds</dt>
                 <dd class="mt-0.5 text-xs font-semibold text-brand-dark">
                   {{ tenant.auto_refund_on_failure ? `Auto after ${tenant.auto_refund_after_minutes}m` : 'Manual' }}
                 </dd>
+              </div>
+              <div class="clay-sm rounded-xl bg-bg p-3">
+                <dt class="text-[10px] font-bold tracking-widest text-muted uppercase">Rate limit</dt>
+                <dd class="mt-0.5 text-xs font-semibold text-brand-dark">{{ tenant.rate_limit_per_min }}/min</dd>
               </div>
               <div class="clay-sm rounded-xl bg-bg p-3">
                 <dt class="text-[10px] font-bold tracking-widest text-muted uppercase">Created</dt>
@@ -213,6 +326,113 @@ const saveTier = async () => {
                 <dd class="mt-0.5 text-xs font-semibold text-brand-dark">{{ tenant.orders_today ?? '—' }}</dd>
               </div>
             </dl>
+
+            <form v-else class="space-y-3" @submit.prevent="saveDetails">
+              <div class="grid grid-cols-2 gap-3">
+                <label class="col-span-2 block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Name</span>
+                  <input
+                    v-model="details.name"
+                    required
+                    maxlength="150"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                </label>
+                <label class="col-span-2 block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Email</span>
+                  <input
+                    v-model="details.email"
+                    type="email"
+                    required
+                    maxlength="150"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Phone</span>
+                  <input
+                    v-model="details.phone"
+                    maxlength="40"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                    placeholder="0245000000"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Rate limit / min</span>
+                  <input
+                    v-model.number="details.rate_limit"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                  <span class="mt-1 block text-[10px] text-muted">Applies to their API keys.</span>
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Min top-up (cedis)</span>
+                  <input
+                    v-model="details.min_topup"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                  <span class="mt-1 block text-[10px] text-muted">Currently {{ money(tenant.min_topup_minor) }}.</span>
+                </label>
+                <label class="block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Wallet floor (cedis)</span>
+                  <input
+                    v-model="details.wallet_floor"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                  <span class="mt-1 block text-[10px] text-muted">
+                    Debits stop here. Currently {{ money(tenant.min_balance_minor) }}.
+                  </span>
+                </label>
+                <label class="col-span-2 flex items-center gap-2.5 rounded-xl bg-bg px-3 py-2.5">
+                  <input v-model="details.auto_refund" type="checkbox" class="h-4 w-4 accent-brand" />
+                  <span class="text-xs font-bold text-brand-dark/70">Auto-refund failed orders</span>
+                </label>
+                <label v-if="details.auto_refund" class="col-span-2 block">
+                  <span class="mb-1 block text-xs font-bold text-brand-dark/70">Auto-refund after (minutes)</span>
+                  <input
+                    v-model.number="details.refund_minutes"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none"
+                  />
+                  <span class="mt-1 block text-[10px] text-muted">
+                    The settle cron waits this long before refunding a still-failing order.
+                  </span>
+                </label>
+              </div>
+
+              <p v-if="detailsError" class="rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                {{ detailsError }}
+              </p>
+
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  :disabled="savingDetails"
+                  class="clay-btn-light rounded-xl bg-surface px-3 py-2 text-[11px] font-bold text-brand-dark disabled:opacity-60"
+                  @click="closeDetails"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  :disabled="savingDetails"
+                  class="rounded-xl bg-brand px-3 py-2 text-[11px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
+                >
+                  {{ savingDetails ? 'Saving…' : 'Save details' }}
+                </button>
+              </div>
+            </form>
 
             <!-- Lifecycle: the audited actions live behind these buttons, not behind
                  a generic "save" that would record nothing. -->
@@ -298,7 +518,14 @@ const saveTier = async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="o in orders" :key="o.id" class="border-b border-brand/5 last:border-0">
+                  <tr
+                    v-for="o in orders"
+                    :key="o.id"
+                    class="cursor-pointer border-b border-brand/5 transition last:border-0 hover:bg-brand/5"
+                    tabindex="0"
+                    @click="selectedOrder = o.id"
+                    @keydown.enter="selectedOrder = o.id"
+                  >
                     <td class="px-3 py-2.5 font-mono text-[11px] font-semibold text-brand-dark">{{ o.reference }}</td>
                     <td class="px-3 py-2.5 text-muted">{{ o.network }}</td>
                     <td class="px-3 py-2.5 text-right font-semibold">{{ money(o.amount_minor) }}</td>
@@ -342,4 +569,11 @@ const saveTier = async () => {
       </div>
     </div>
   </Teleport>
+
+  <OrderSheet
+    v-if="selectedOrder"
+    :tenant-id="tenantId"
+    :order-id="selectedOrder"
+    @close="selectedOrder = null"
+  />
 </template>

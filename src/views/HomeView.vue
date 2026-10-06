@@ -161,8 +161,8 @@ const priceSummary = computed(() => {
             <span class="sm:hidden">Track</span>
           </a>
           <a href="#/admin" class="hidden items-center gap-1.5 rounded-xl bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand/10 sm:flex">Admin</a>
-          <a href="#/partners" class="hidden items-center gap-1.5 rounded-xl border border-brand/25 px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:flex">Partners</a>
-          <a href="#/tenant" class="hidden items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 md:flex">Dashboard</a>
+          <a href="#/partners" class="hidden items-center gap-1.5 rounded-xl border border-brand/25 px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:flex">Partner console</a>
+          <a href="#/tenant" class="hidden items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 md:flex">Partner dashboard</a>
         </nav>
       </div>
     </header>

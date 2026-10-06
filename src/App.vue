@@ -13,7 +13,26 @@ import { isAuthenticated } from './services/auth'
 import { partnerIsAuthenticated } from './services/partnerApi'
 import { tenantIsAuthenticated } from './services/tenantApi'
 
-const hash = ref(window.location.hash || '#/')
+// Hashes people half-remember used to fall straight through to the home page,
+// which reads as "that console is gone" rather than "you typed it slightly
+// wrong". `#/partner` is the one that actually gets typed; `#/dashboard` is
+// what people call the partner dashboard. Both land on the console they meant.
+const ALIASES = [
+  ['#/partner', '#/partners'],
+  ['#/dashboard', '#/tenant'],
+]
+
+const readHash = () => {
+  const raw = window.location.hash || '#/'
+  const hit = ALIASES.find(([from]) => raw === from || raw.startsWith(`${from}/`))
+  if (hit) {
+    window.location.hash = hit[1]
+    return hit[1]
+  }
+  return raw
+}
+
+const hash = ref(readHash())
 const authed = ref(false)
 const partnerAuthed = ref(false)
 const tenantAuthed = ref(false)
@@ -41,7 +60,7 @@ const syncSession = async () => {
 }
 
 const onHash = async () => {
-  hash.value = window.location.hash || '#/'
+  hash.value = readHash()
   window.scrollTo({ top: 0, behavior: 'instant' })
   // The session was previously only checked for whatever hash the page was
   // opened on, so walking from the home page to #/admin showed the login form

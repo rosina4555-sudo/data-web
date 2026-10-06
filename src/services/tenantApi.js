@@ -30,7 +30,7 @@ const call = (method, path, body = null, options = {}) =>
   request(method, `${BASE}${path}`, body, {
     tokenKey: TOKEN_KEY,
     adminKey: TENANT_KEY,
-    loginRoute: '#/tenant',
+    loginRoute: '#/partners',
     ...options,
   })
 
@@ -57,7 +57,7 @@ export function setTenantProfile(tenant) {
 
 export async function tenantLogin(email, password) {
   if (!email?.trim() || !password) {
-    return { ok: false, error: 'Email and password are required.' }
+    return { ok: false, code: 'error', error: 'Email and password are required.' }
   }
 
   try {
@@ -69,12 +69,12 @@ export async function tenantLogin(email, password) {
         allow401: true,
         tokenKey: TOKEN_KEY,
         adminKey: TENANT_KEY,
-        loginRoute: '#/tenant',
+        loginRoute: '#/partners',
       },
     )
 
     const data = res.data || res
-    if (!data.token) return { ok: false, error: 'Sign-in failed.' }
+    if (!data.token) return { ok: false, code: 'error', error: 'Sign-in failed.' }
 
     setToken(data.token, TOKEN_KEY)
     setTenantProfile(data.tenant)
@@ -83,14 +83,14 @@ export async function tenantLogin(email, password) {
   } catch (err) {
     const msg = err?.message || 'Sign-in failed'
     if (/too many|429|throttl/i.test(msg)) {
-      return { ok: false, error: 'Too many attempts. Please try again later.' }
+      return { ok: false, code: 'rate_limited', error: 'Too many attempts. Please try again later.' }
     }
     // The server refuses unknown address, unset password and wrong password
     // with one message, so this is everything a wrong sign-in can say.
     if (/details are not valid/i.test(msg)) {
-      return { ok: false, error: 'Email or password is not correct.' }
+      return { ok: false, code: 'bad_credentials', error: 'Email or password is not correct.' }
     }
-    return { ok: false, error: msg }
+    return { ok: false, code: 'error', error: msg }
   }
 }
 
@@ -109,7 +109,7 @@ export async function tenantIsAuthenticated() {
       allow401: true,
       tokenKey: TOKEN_KEY,
       adminKey: TENANT_KEY,
-      loginRoute: '#/tenant',
+      loginRoute: '#/partners',
     })
     const tenant = res.data
     if (!tenant?.id) {
@@ -126,7 +126,7 @@ export async function tenantIsAuthenticated() {
 
 export function tenantLogout() {
   clearTenantAuth()
-  window.location.hash = '#/tenant'
+  window.location.hash = '#/partners'
   window.location.reload()
 }
 

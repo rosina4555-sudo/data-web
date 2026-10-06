@@ -1,33 +1,49 @@
 <script setup>
+/**
+ * The partner console's single front door.
+ *
+ * Two kinds of person sign in here: DataPadi staff, whose account carries
+ * `can_manage_partners`, and a partner's own account, which has no operator
+ * rights at all and must land on the partner's dashboard instead of the
+ * operator's. The form does not ask which you are — `consoleLogin` works it
+ * out from the credentials and emits the one event that matches, so there is
+ * one URL, one thing to remember, and no wrong door to walk into.
+ */
 import { ref } from 'vue'
-import { partnerLogin } from '../services/partnerApi'
+import { consoleLogin } from '../services/partnerApi'
 import { toast } from '../services/toast'
 import Logo from '../components/Logo.vue'
 
-const emit = defineEmits(['authenticated'])
+const emit = defineEmits(['authenticated', 'tenant-authenticated'])
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 
-// Set by the API wrapper when a session is dropped for lack of permission
-// rather than for having expired — the operator is signed out here with the
-// server's reason, instead of being left in a console of 403s.
+// Set by the API wrapper when a session is dropped for lack of permission, or
+// when the account itself is suspended — the reason is left waiting here
+// instead of leaving a person to guess why the door will not open.
 const notice = ref(sessionStorage.getItem('dp_login_notice') || '')
 sessionStorage.removeItem('dp_login_notice')
 
 const submit = async () => {
   if (loading.value) return
   loading.value = true
-  const res = await partnerLogin(email.value, password.value)
+  const res = await consoleLogin(email.value, password.value)
   loading.value = false
-  if (res.ok) {
+
+  if (!res.ok) {
+    toast(res.error || 'Login failed', 'error')
+    return
+  }
+
+  if (res.role === 'tenant') {
+    toast('Signed in to your dashboard', 'success')
+    emit('tenant-authenticated')
+  } else {
     toast('Signed in to the partner console', 'success')
     emit('authenticated')
-    window.location.hash = '#/partners'
-  } else {
-    toast(res.error || 'Login failed', 'error')
   }
 }
 </script>
@@ -46,8 +62,8 @@ const submit = async () => {
 
       <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Sign in</h1>
       <p class="mt-1 text-xs text-muted">
-        DataPadi staff only — managing partners, tiers, wallets and settlements. Requires
-        partner management permission, and uses its own session.
+        One sign-in for both sides. Staff land on the console for managing partners; a
+        partner's own account lands on its dashboard — orders, wallet and API keys.
       </p>
 
       <div class="mt-5 space-y-4">
@@ -58,7 +74,7 @@ const submit = async () => {
             type="email"
             autocomplete="email"
             required
-            placeholder="admin@datapadi.com"
+            placeholder="you@company.com"
             class="clay-well w-full rounded-2xl bg-bg px-4 py-3 text-sm font-medium text-brand-dark outline-none transition placeholder:text-muted/40 focus:bg-surface"
           />
         </label>
@@ -93,12 +109,10 @@ const submit = async () => {
       >
         {{ loading ? 'Signing in…' : 'Sign in' }}
       </button>
-    </form>
 
-    <p class="mt-5 max-w-sm text-center text-xs text-muted">
-      This is not where a partner signs in. If you have your own partner account, your
-      login is on the
-      <a href="#/tenant" class="font-bold text-brand transition hover:text-accent-dark">partner dashboard</a>.
-    </p>
+      <p class="mt-4 text-center text-[11px] text-muted">
+        Use the account you were given — we work out which side it belongs to.
+      </p>
+    </form>
   </div>
 </template>

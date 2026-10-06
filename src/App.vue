@@ -6,20 +6,21 @@ import AdminLogin from './views/AdminLogin.vue'
 import AdminView from './views/AdminView.vue'
 import PartnersLogin from './views/PartnersLogin.vue'
 import PartnersView from './views/PartnersView.vue'
-import TenantLogin from './views/TenantLogin.vue'
 import TenantView from './views/TenantView.vue'
 import ToastHost from './components/ToastHost.vue'
 import { isAuthenticated } from './services/auth'
 import { partnerIsAuthenticated } from './services/partnerApi'
 import { tenantIsAuthenticated } from './services/tenantApi'
 
-// Hashes people half-remember used to fall straight through to the home page,
+// There is one partner-console URL. Everything people half-remember — the
+// missing "s", the separate dashboard route this used to have, plain
+// "#/dashboard" — lands on it instead of falling through to the home page,
 // which reads as "that console is gone" rather than "you typed it slightly
-// wrong". `#/partner` is the one that actually gets typed; `#/dashboard` is
-// what people call the partner dashboard. Both land on the console they meant.
+// wrong".
 const ALIASES = [
   ['#/partner', '#/partners'],
-  ['#/dashboard', '#/tenant'],
+  ['#/tenant', '#/partners'],
+  ['#/dashboard', '#/partners'],
 ]
 
 const readHash = () => {
@@ -38,11 +39,16 @@ const partnerAuthed = ref(false)
 const tenantAuthed = ref(false)
 const ready = ref(false)
 
-// Three independent sessions. The partner console keeps its own token, and the
-// tenant dashboard keeps a third that proves "I am this partner", not "I am an
-// operator with partner rights" — so signing in on one must not sign in
-// another, and a 401 in one must not bounce the other two. Hence three flags
-// and three checks.
+// The admin console and the partner console keep separate tokens, and the
+// partner's own account keeps a third — so signing in on one must not sign in
+// another, and a 401 in one must not bounce the other two.
+//
+// Both kinds of partner-console session sit behind the same hash, so they are
+// checked in order rather than in parallel: whoever holds a staff session gets
+// the staff console (one request, and no tenant check at all), and only a
+// visitor without one is asked whether they are a partner. The second check is
+// free when there is no tenant token — `tenantIsAuthenticated` returns before
+// it reaches the network.
 //
 // Only the hub that is being entered is checked, and only when it has not been
 // checked already: the server round trip belongs at the door, not on every
@@ -51,11 +57,11 @@ const syncSession = async () => {
   if (hash.value.startsWith('#/admin') && !authed.value) {
     authed.value = await isAuthenticated()
   }
-  if (hash.value.startsWith('#/partners') && !partnerAuthed.value) {
+  if (hash.value.startsWith('#/partners') && !partnerAuthed.value && !tenantAuthed.value) {
     partnerAuthed.value = await partnerIsAuthenticated()
-  }
-  if (hash.value.startsWith('#/tenant') && !tenantAuthed.value) {
-    tenantAuthed.value = await tenantIsAuthenticated()
+    if (!partnerAuthed.value) {
+      tenantAuthed.value = await tenantIsAuthenticated()
+    }
   }
 }
 
@@ -84,13 +90,17 @@ const isDashboard = computed(() => isAdminHub.value && authed.value)
 // Checked before #/admin because '#/admin...' is a prefix of neither, but kept
 // explicit so the ordering intent survives a future rename.
 const isPartnersHub = computed(() => hash.value.startsWith('#/partners'))
-const isPartnersLogin = computed(() => isPartnersHub.value && !partnerAuthed.value)
-const isPartnersDashboard = computed(() => isPartnersHub.value && partnerAuthed.value)
 
-// A partner signs into this one with its own account, not as an operator.
-const isTenantHub = computed(() => hash.value.startsWith('#/tenant'))
-const isTenantLogin = computed(() => isTenantHub.value && !tenantAuthed.value)
-const isTenantDashboard = computed(() => isTenantHub.value && tenantAuthed.value)
+// One door, two destinations behind it. The credentials decide which: a staff
+// session renders the operator console, a partner's own session renders their
+// dashboard, and with neither the shared sign-in form is what shows.
+const isPartnersLogin = computed(
+  () => isPartnersHub.value && !partnerAuthed.value && !tenantAuthed.value,
+)
+const isPartnersDashboard = computed(() => isPartnersHub.value && partnerAuthed.value)
+const isTenantDashboard = computed(
+  () => isPartnersHub.value && !partnerAuthed.value && tenantAuthed.value,
+)
 
 // A hash nobody handles rendered a blank page, which reads as "broken". The
 // home page is the default destination for anything unrecognised.
@@ -133,9 +143,12 @@ const onTenantAuthenticated = () => {
     <TrackOrderView v-else-if="isTrack" />
     <AdminLogin v-else-if="isLogin" @authenticated="onAuthenticated" />
     <AdminView v-else-if="isDashboard" @logout="onLogout" />
-    <PartnersLogin v-else-if="isPartnersLogin" @authenticated="onPartnerAuthenticated" />
+    <PartnersLogin
+      v-else-if="isPartnersLogin"
+      @authenticated="onPartnerAuthenticated"
+      @tenant-authenticated="onTenantAuthenticated"
+    />
     <PartnersView v-else-if="isPartnersDashboard" />
-    <TenantLogin v-else-if="isTenantLogin" @authenticated="onTenantAuthenticated" />
     <TenantView v-else-if="isTenantDashboard" />
   </template>
 </template>

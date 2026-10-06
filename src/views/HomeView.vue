@@ -162,7 +162,6 @@ const priceSummary = computed(() => {
           </a>
           <a href="#/admin" class="hidden items-center gap-1.5 rounded-xl bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand/10 sm:flex">Admin</a>
           <a href="#/partners" class="hidden items-center gap-1.5 rounded-xl border border-brand/25 px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:flex">Partner console</a>
-          <a href="#/tenant" class="hidden items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 md:flex">Partner dashboard</a>
         </nav>
       </div>
     </header>
@@ -425,7 +424,6 @@ const priceSummary = computed(() => {
                 <li><a href="#/track" class="transition-colors hover:text-brand">Track order</a></li>
                 <li><a href="#/admin" class="transition-colors hover:text-brand">Admin</a></li>
                 <li><a href="#/partners" class="transition-colors hover:text-brand">Partner console</a></li>
-                <li><a href="#/tenant" class="transition-colors hover:text-brand">Partner dashboard</a></li>
               </ul>
             </div>
             <div>

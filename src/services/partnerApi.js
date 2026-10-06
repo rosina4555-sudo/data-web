@@ -16,6 +16,7 @@ import {
   setAdmin,
   clearAuth,
 } from './api'
+import { tenantLogin, clearTenantAuth } from './tenantApi'
 
 const TOKEN_KEY = 'dp_partner_token'
 const ADMIN_KEY = 'dp_partner_admin'
@@ -68,11 +69,14 @@ export async function partnerLogin(email, password) {
 
     const data = res.data || res
 
-    if (!data.token) return { ok: false, error: 'Login failed.' }
+    if (!data.token) return { ok: false, code: 'error', error: 'Login failed.' }
     if (!data.admin?.can_manage_partners) {
-      // Do not store a token this account cannot use.
+      // Do not store a token this account cannot use. `no_permission` rather
+      // than `bad_credentials`: the password was right, so falling through to
+      // the partner's own login would be wrong.
       return {
         ok: false,
+        code: 'no_permission',
         error: 'This account does not have partner management permission.',
       }
     }
@@ -84,13 +88,49 @@ export async function partnerLogin(email, password) {
   } catch (err) {
     const msg = err?.message || 'Login failed'
     if (/too many|429|throttl/i.test(msg)) {
-      return { ok: false, error: 'Too many attempts. Please try again later.' }
+      return { ok: false, code: 'rate_limited', error: 'Too many attempts. Please try again later.' }
     }
     if (/credential|invalid|unauthor/i.test(msg)) {
-      return { ok: false, error: 'Invalid email or password.' }
+      return { ok: false, code: 'bad_credentials', error: 'Invalid email or password.' }
     }
-    return { ok: false, error: msg }
+    return { ok: false, code: 'error', error: msg }
   }
+}
+
+/**
+ * One door for both kinds of partner-console user.
+ *
+ * Staff hold an operator account (`can_manage_partners`); a partner holds a
+ * tenant account. Both used to have their own login screen, which meant two
+ * URLs, two links to explain, and a person guessing which one was theirs — so
+ * the form tries the operator account first (one request when it is a staff
+ * login, which is who is typing at this screen most of the time) and falls
+ * through to the partner's own credentials only when the operator endpoint
+ * simply does not recognise the address.
+ *
+ * `code` is what the caller branches on, never the wording: the two endpoints
+ * already refuse unknown addresses and wrong passwords with the same generic
+ * sentence, and nothing here may turn that into an oracle.
+ */
+export async function consoleLogin(email, password) {
+  const staff = await partnerLogin(email, password)
+  if (staff.ok) {
+    // Exactly one console session at a time. A partner token left over from
+    // last week would otherwise be found first at the door and put somebody
+    // who just signed in as staff onto their partner dashboard instead.
+    clearTenantAuth()
+    return { ok: true, role: 'admin', admin: staff.admin }
+  }
+  if (staff.code !== 'bad_credentials') return staff
+
+  const partner = await tenantLogin(email, password)
+  if (partner.ok) {
+    clearPartnerAuth()
+    return { ok: true, role: 'tenant', tenant: partner.tenant }
+  }
+  if (partner.code !== 'bad_credentials') return partner
+
+  return { ok: false, code: 'bad_credentials', error: 'Email or password is not correct.' }
 }
 
 export async function partnerIsAuthenticated() {

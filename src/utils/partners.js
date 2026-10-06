@@ -35,6 +35,23 @@ export const tenantStatusMeta = (status) =>
   TENANT_STATUS_META[status] || { label: status || '—', cls: 'bg-slate-100 text-slate-500' }
 
 /**
+ * Payment transactions, as Paystack reports them.
+ *
+ * `pending` is amber because the money may already have left the partner and
+ * simply not reached us yet — it is the one state that can still move, and the
+ * one with a "check with Paystack" button attached to it.
+ */
+export const TOPUP_STATUS_META = {
+  pending: { label: 'Awaiting Paystack', cls: 'bg-amber-50 text-amber-700' },
+  success: { label: 'Paid', cls: 'bg-emerald-50 text-emerald-700' },
+  failed: { label: 'Failed', cls: 'bg-red-50 text-red-600' },
+  expired: { label: 'Expired', cls: 'bg-slate-100 text-slate-500' },
+}
+
+export const topupStatusMeta = (status) =>
+  TOPUP_STATUS_META[status] || { label: status || '—', cls: 'bg-slate-100 text-slate-500' }
+
+/**
  * Settlement lifecycle.
  *
  * `pending` is amber rather than slate: it is money we owe a partner that has not

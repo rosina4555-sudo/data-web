@@ -19,6 +19,7 @@ import OverviewPanel from '../components/tenant/OverviewPanel.vue'
 import BuyPanel from '../components/tenant/BuyPanel.vue'
 import OrdersPanel from '../components/tenant/OrdersPanel.vue'
 import WalletPanel from '../components/tenant/WalletPanel.vue'
+import TransactionsPanel from '../components/tenant/TransactionsPanel.vue'
 import ApiKeysPanel from '../components/tenant/ApiKeysPanel.vue'
 import ProfilePanel from '../components/tenant/ProfilePanel.vue'
 
@@ -27,6 +28,7 @@ const tabs = [
   { id: 'buy', label: 'Buy data', icon: 'cart' },
   { id: 'orders', label: 'Orders', icon: 'list' },
   { id: 'wallet', label: 'Wallet', icon: 'wallet' },
+  { id: 'transactions', label: 'Transactions', icon: 'receipt' },
   { id: 'keys', label: 'API keys', icon: 'key' },
   { id: 'profile', label: 'Profile', icon: 'user' },
 ]
@@ -39,6 +41,7 @@ const panels = {
   buy: BuyPanel,
   orders: OrdersPanel,
   wallet: WalletPanel,
+  transactions: TransactionsPanel,
   keys: ApiKeysPanel,
   profile: ProfilePanel,
 }
@@ -91,6 +94,7 @@ const ActivePanel = computed(() => panels[activeTab.value])
           <svg v-else-if="t.icon === 'cart'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <svg v-else-if="t.icon === 'list'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           <svg v-else-if="t.icon === 'wallet'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/><path d="M16 12h.01"/></svg>
+          <svg v-else-if="t.icon === 'receipt'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
           <svg v-else-if="t.icon === 'key'" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
           <svg v-else class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           {{ t.label }}

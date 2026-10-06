@@ -172,4 +172,26 @@ export const tenantApi = {
       headers: { 'Idempotency-Key': idempotencyKey },
       allow403: true,
     }),
+
+  /**
+   * Payment transactions — the charges themselves, which are deliberately a
+   * different list from the ledger above: entries are balance movements, these
+   * are what Paystack holds, and they are what you read when a credit is late.
+   */
+  getTopups: (params) => call('GET', `/wallet/topups${qs(params)}`),
+  getTopup: (ref) => call('GET', `/wallet/topups/${encodeURIComponent(ref)}`),
+
+  /**
+   * Ask Paystack about one transaction and settle it from the answer. The
+   * webhook is the normal path; this is the fallback when it was late or lost.
+   * It applies the same rules a webhook does, so it can credit at most once.
+   *
+   * A 502 here means the gateway was unreachable — the transaction is
+   * unchanged, never a reason to pay again — and a refusal to spend or verify
+   * is information, not a dead session.
+   */
+  verifyTopup: (ref) =>
+    call('POST', `/wallet/topups/${encodeURIComponent(ref)}/verify`, null, {
+      allow403: true,
+    }),
 }

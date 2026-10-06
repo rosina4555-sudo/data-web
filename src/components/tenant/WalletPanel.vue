@@ -8,13 +8,20 @@
  * one number is what makes "you have money but the order was refused" look
  * like a bug rather than a rule.
  *
- * Top-ups leave for Paystack and come back; nothing here claims credit before
- * the webhook says it landed.
+ * The top-up is charged in Paystack's popup without leaving this page, and
+ * then watched: the webhook credits the wallet whenever it lands, this panel
+ * polls its own API for a bounded stretch, and at the deadline it asks
+ * Paystack directly. That last step is not a workaround — Paystack is the
+ * source of truth, and the verification endpoint settles a transaction under
+ * exactly the rules a webhook would, so asking twice can never credit twice.
+ *
+ * Nothing here claims credit before Paystack says it landed.
  */
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, onDeactivated, computed, watch } from 'vue'
 import { tenantApi } from '../../services/tenantApi'
+import { openPaystack } from '../../services/payment'
 import { toast } from '../../services/toast'
-import { money, newIdempotencyKey } from '../../utils/partners'
+import { money, newIdempotencyKey, topupStatusMeta } from '../../utils/partners'
 import { currency, formatDateTime } from '../../utils/format'
 import LoadError from '../LoadError.vue'
 import Pagination from '../admin/Pagination.vue'
@@ -40,6 +47,32 @@ const error = ref('')
 const form = ref({ amount: '', email: '' })
 const starting = ref(false)
 const idempotencyKey = ref(newIdempotencyKey())
+
+/**
+ * How long to watch our own API for the webhook before putting the question
+ * straight to Paystack. Polling longer is just a slower way of not asking the
+ * gateway; verifying sooner would catch the webhook mid-flight. A minute is
+ * the pause between "it is nearly always instant" and "this one is not".
+ */
+const POLL_MS = 2500
+const POLL_DEADLINE_MS = 60000
+
+/** The charge in flight, so its outcome is still visible after the popup. */
+const pending = ref(null)
+const confirming = ref(false)
+const verifying = ref(false)
+
+let pollTimer = null
+let deadline = 0
+let ticking = false
+
+const stopWatching = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  confirming.value = false
+}
 
 const load = async () => {
   loading.value = true
@@ -88,7 +121,7 @@ const localProblem = computed(() => {
 })
 
 const startTopup = async () => {
-  if (starting.value || localProblem.value) return
+  if (starting.value || confirming.value || localProblem.value) return
 
   starting.value = true
   try {
@@ -99,22 +132,128 @@ const startTopup = async () => {
       },
       idempotencyKey.value,
     )
+    const topup = res.data
+    pending.value = topup
 
-    // Paid for this attempt: the next one is a fresh intent.
-    idempotencyKey.value = newIdempotencyKey()
-    toast('Opening secure payment…', 'success')
-    window.location.href = res.data.authorization_url
+    // The charge happens where the partner already is. A popup that is blocked
+    // or closed leaves the transaction open rather than lost: pressing the
+    // button again presents the same intent (the key is unchanged) and gets
+    // the same charge back.
+    await openPaystack({ accessCode: topup.access_code })
+    toast('Payment submitted — checking it with Paystack…', 'success')
+    await confirm(topup.reference)
   } catch (err) {
-    toast(err?.message || 'Could not start that top-up.', 'error')
+    if (err?.message === 'Payment cancelled') {
+      toast('Payment window closed — this top-up is still open, press the button again to carry on.', 'info')
+    } else {
+      toast(err?.message || 'Could not start that top-up.', 'error')
+    }
+  } finally {
     starting.value = false
   }
 }
+
+/**
+ * Watch our own API for the webhook to land. Bounded, and the deadline is the
+ * interesting half: when it passes, the verification endpoint is called, which
+ * asks Paystack the same question the webhook would have answered.
+ */
+const confirm = async (reference) => {
+  stopWatching()
+  confirming.value = true
+  deadline = Date.now() + POLL_DEADLINE_MS
+
+  const tick = async () => {
+    if (!confirming.value || ticking) return
+    ticking = true
+    try {
+      let topup = null
+      try {
+        topup = (await tenantApi.getTopup(reference)).data
+      } catch {
+        // A read that fails is not a verdict. The deadline decides whether to
+        // ask Paystack, not one bad request.
+      }
+      if (topup && topup.status !== 'pending') {
+        finish(topup)
+        return
+      }
+      if (Date.now() >= deadline) await verify(reference)
+    } finally {
+      ticking = false
+    }
+  }
+
+  await tick()
+  if (confirming.value) pollTimer = setInterval(tick, POLL_MS)
+}
+
+/**
+ * Ask Paystack directly what happened to this transaction and take its word.
+ * Safe to repeat: settlement is keyed to the transaction, so a second call can
+ * see the credit but never add one. A 502 means the gateway was unreachable —
+ * the transaction is unchanged and still worth checking, never worth paying
+ * again.
+ */
+const verify = async (reference) => {
+  if (verifying.value) return
+  verifying.value = true
+  try {
+    const topup = (await tenantApi.verifyTopup(reference)).data
+    finish(topup)
+    if (topup.status === 'pending') {
+      toast(
+        topup.gateway_message || 'Paystack has not confirmed this payment yet — try again in a moment.',
+        'info',
+      )
+    }
+  } catch (err) {
+    toast(err?.message || 'Could not reach Paystack — try again shortly.', 'error')
+  } finally {
+    verifying.value = false
+    confirming.value = false
+  }
+}
+
+/** A transaction reached a final state: show it, and stop watching it. */
+const finish = (topup) => {
+  stopWatching()
+  pending.value = topup
+
+  // The key names one attempt at one amount; a settled attempt is over, so the
+  // next top-up is a fresh charge rather than a replay of this one.
+  if (topup.status !== 'pending') idempotencyKey.value = newIdempotencyKey()
+
+  if (topup.status === 'success') {
+    toast('Payment confirmed — your wallet has been credited.', 'success')
+    reload()
+  } else if (topup.status === 'failed') {
+    toast(topup.error_message || 'Paystack reports this payment as failed — nothing was credited.', 'error')
+  } else if (topup.status === 'expired') {
+    toast('That payment expired — nothing was credited.', 'error')
+  }
+}
+
+// A different amount or email is a different attempt, so it must not be
+// presented under the key that named the old one.
+watch(
+  () => [form.value.amount, form.value.email],
+  () => {
+    idempotencyKey.value = newIdempotencyKey()
+  },
+)
 
 // Paging re-reads only the ledger: the balance above does not change because
 // somebody scrolled further down the list.
 watch(page, load)
 
 onMounted(load)
+
+// This panel is kept alive between tabs, so leaving it deactivates rather than
+// unmounts it — polling has to stop on both paths, or a background tab keeps
+// asking about a transaction nobody is watching.
+onDeactivated(stopWatching)
+onUnmounted(stopWatching)
 </script>
 
 <template>
@@ -176,12 +315,53 @@ onMounted(load)
 
           <button
             type="submit"
-            :disabled="starting || !!localProblem || !form.amount"
+            :disabled="starting || confirming || !!localProblem || !form.amount"
             class="mt-4 w-full rounded-xl bg-gradient-to-r from-brand to-brand-dark px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-brand/25 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {{ starting ? 'Opening…' : 'Top up wallet' }}
+            {{ starting ? 'Opening…' : confirming ? 'Confirming payment…' : 'Top up wallet' }}
           </button>
         </form>
+
+        <!-- The charge in flight, kept where the form was so the outcome of a
+             popup that has closed is never lost. -->
+        <div v-if="pending" class="clay rounded-2xl bg-surface p-4 sm:p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[10px] font-extrabold tracking-widest text-muted uppercase">This top-up</p>
+              <p class="mt-1 truncate font-mono text-[11px] font-semibold text-brand-dark">{{ pending.reference }}</p>
+            </div>
+            <span
+              class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold"
+              :class="topupStatusMeta(pending.status).cls"
+            >{{ topupStatusMeta(pending.status).label }}</span>
+          </div>
+
+          <p class="mt-2.5 text-[11px] leading-relaxed text-muted">
+            <template v-if="confirming">
+              Waiting for Paystack to report this payment — up to a minute, then we ask them directly.
+            </template>
+            <template v-else-if="pending.status === 'success'">
+              {{ money(pending.amount_minor) }} credited{{ pending.paid_at ? ` at ${formatDateTime(pending.paid_at)}` : '' }}.
+            </template>
+            <template v-else-if="pending.status === 'pending'">
+              No confirmation yet. If your bank already sent the money, ask Paystack — they decide, and the
+              wallet is credited the moment they say it landed.
+            </template>
+            <template v-else>
+              {{ pending.error_message || 'This payment did not go through — nothing was charged.' }}
+            </template>
+          </p>
+
+          <button
+            v-if="pending.status === 'pending' && !confirming"
+            type="button"
+            :disabled="verifying"
+            class="mt-3 w-full rounded-xl border border-brand/20 px-4 py-2.5 text-xs font-bold text-brand transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+            @click="verify(pending.reference)"
+          >
+            {{ verifying ? 'Asking Paystack…' : 'Check with Paystack now' }}
+          </button>
+        </div>
 
         <div v-if="wallet" class="clay rounded-2xl bg-surface p-4 sm:p-5">
           <h2 class="font-heading text-sm font-bold tracking-tight text-brand-dark">Lifetime</h2>

@@ -14,6 +14,7 @@ import { tenantStatusMeta, auditMeta, money } from '../../utils/partners'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
 import OrderSheet from './OrderSheet.vue'
+import LoadError from '../LoadError.vue'
 
 const props = defineProps({
   tenantId: { type: Number, required: true },
@@ -257,9 +258,9 @@ const saveDetails = async () => {
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+          <LoadError :error="error" :busy="loading" @retry="init" />
 
-          <div v-else-if="loading" class="py-10 text-center text-xs text-muted">Loading…</div>
+          <div v-if="loading" class="py-10 text-center text-xs text-muted">Loading…</div>
 
           <!-- Profile & lifecycle -->
           <div v-else-if="tab === 'profile' && tenant" class="space-y-5">

@@ -15,6 +15,7 @@ import { ref, computed, onMounted } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money, percent } from '../../utils/partners'
+import LoadError from '../LoadError.vue'
 
 const tiers = ref([])
 const packages = ref([])
@@ -131,7 +132,7 @@ const save = async () => {
       </label>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="error" :busy="loading" @retry="load" />
 
     <!-- Loudest first. A margin problem here is money being given away silently. -->
     <div v-if="problems.length" class="rounded-2xl border border-red-200 bg-red-50 p-4">

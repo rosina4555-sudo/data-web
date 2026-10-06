@@ -15,6 +15,7 @@ import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money } from '../../utils/partners'
 import { formatDateTime } from '../../utils/format'
+import LoadError from '../LoadError.vue'
 
 const tiers = ref([])
 const loading = ref(true)
@@ -149,7 +150,7 @@ const retire = async (tier) => {
       </button>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="error" :busy="loading" @retry="load" />
 
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <div
@@ -211,7 +212,10 @@ const retire = async (tier) => {
         </div>
       </div>
 
-      <div v-if="!loading && !tiers.length" class="sm:col-span-2 lg:col-span-3">
+      <div v-if="loading" class="sm:col-span-2 lg:col-span-3">
+        <p class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">Loading…</p>
+      </div>
+      <div v-else-if="!tiers.length" class="sm:col-span-2 lg:col-span-3">
         <p class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
           No tiers yet. Create one, then price it on the Pricing tab.
         </p>

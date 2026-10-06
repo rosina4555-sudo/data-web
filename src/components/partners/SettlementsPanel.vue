@@ -12,12 +12,13 @@
  * and letting the table tell the operator what actually happened, rather than
  * showing a bare error for an action that partially succeeded.
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money, settlementMeta, isRetryable } from '../../utils/partners'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
+import LoadError from '../LoadError.vue'
 
 const tenants = ref([])
 const tenantId = ref(null)
@@ -29,12 +30,17 @@ const loading = ref(false)
 const error = ref('')
 const retryingId = ref(null)
 
+// Two loads (picker, rows); the picker failing must not read as "no partners".
+const tenantsError = ref('')
+const loadError = computed(() => tenantsError.value || error.value)
+
 const loadTenants = async () => {
   try {
     const res = await partnerApi.getTenants({ per_page: 100 })
     tenants.value = res.data
-  } catch {
-    /* picker stays empty */
+    tenantsError.value = ''
+  } catch (err) {
+    tenantsError.value = err?.message || 'Could not load partners.'
   }
 }
 
@@ -60,11 +66,13 @@ const load = async () => {
   }
 }
 
-onMounted(async () => {
+const reload = async () => {
   await loadTenants()
-  if (tenants.value.length) tenantId.value = tenants.value[0].id
-  load()
-})
+  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
+  await load()
+}
+
+onMounted(reload)
 
 const retry = async (row) => {
   if (retryingId.value !== null) return
@@ -123,7 +131,7 @@ const retry = async (row) => {
       </div>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="loadError" :busy="loading" @retry="reload" />
 
     <div v-if="tenantId" class="clay overflow-hidden rounded-2xl bg-surface">
       <div class="overflow-x-auto">
@@ -173,7 +181,10 @@ const retry = async (row) => {
                 </span>
               </td>
             </tr>
-            <tr v-if="!loading && !rows.length">
+                        <tr v-if="loading">
+              <td colspan="7" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
+            </tr>
+<tr v-if="!loading && !rows.length">
               <td colspan="7" class="px-4 py-8 text-center text-xs text-muted">
                 Nothing waiting. Queued rows appear here until they are paid.
               </td>
@@ -186,7 +197,7 @@ const retry = async (row) => {
       </div>
     </div>
 
-    <p v-else-if="!tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
       Create a partner first.
     </p>
   </div>

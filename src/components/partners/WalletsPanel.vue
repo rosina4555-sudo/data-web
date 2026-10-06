@@ -14,10 +14,11 @@
  *    into a balance figure, because a balance that disagrees with the ledger is
  *    the single most expensive thing to miss.
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { money, newIdempotencyKey } from '../../utils/partners'
+import LoadError from '../LoadError.vue'
 import { formatDateTime } from '../../utils/format'
 import Pagination from '../admin/Pagination.vue'
 
@@ -43,6 +44,10 @@ const direction = ref('')
 const loading = ref(false)
 const error = ref('')
 
+// Two loads (picker, ledger); the picker failing must not read as "no partners".
+const tenantsError = ref('')
+const loadError = computed(() => tenantsError.value || error.value)
+
 const showAdjust = ref(false)
 const adjusting = ref(false)
 const form = ref({ direction: 'credit', amount: '', reason: '' })
@@ -52,8 +57,9 @@ const loadTenants = async () => {
   try {
     const res = await partnerApi.getTenants({ per_page: 100 })
     tenants.value = res.data
-  } catch {
-    /* picker stays empty */
+    tenantsError.value = ''
+  } catch (err) {
+    tenantsError.value = err?.message || 'Could not load partners.'
   }
 }
 
@@ -84,11 +90,13 @@ const loadWallet = async () => {
   }
 }
 
-onMounted(async () => {
+const reload = async () => {
   await loadTenants()
-  if (tenants.value.length) tenantId.value = tenants.value[0].id
-  loadWallet()
-})
+  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
+  await loadWallet()
+}
+
+onMounted(reload)
 
 const openAdjust = () => {
   form.value = { direction: 'credit', amount: '', reason: '' }
@@ -173,7 +181,7 @@ const submitAdjust = async () => {
       </div>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="loadError" :busy="loading" @retry="reload" />
 
     <template v-if="wallet">
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -253,7 +261,10 @@ const submitAdjust = async () => {
                 <td class="px-4 py-3 font-mono text-[10px] text-muted">{{ e.reference || '—' }}</td>
                 <td class="px-4 py-3 text-right text-[11px] text-muted">{{ formatDateTime(e.created_at) }}</td>
               </tr>
-              <tr v-if="!loading && !entries.length">
+                          <tr v-if="loading">
+              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
+            </tr>
+<tr v-if="!loading && !entries.length">
                 <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">No movements yet.</td>
               </tr>
             </tbody>
@@ -265,7 +276,7 @@ const submitAdjust = async () => {
       </div>
     </template>
 
-    <p v-else-if="!tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
       Create a partner first.
     </p>
 

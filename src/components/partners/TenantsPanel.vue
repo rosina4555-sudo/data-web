@@ -11,6 +11,7 @@ import { toast } from '../../services/toast'
 import { tenantStatusMeta, money } from '../../utils/partners'
 import Pagination from '../admin/Pagination.vue'
 import TenantSheet from './TenantSheet.vue'
+import LoadError from '../LoadError.vue'
 
 const tenants = ref([])
 const tiers = ref([])
@@ -57,6 +58,13 @@ const loadTiers = async () => {
   } catch {
     /* the create form degrades to "pick a tier" with nothing in it */
   }
+}
+
+// Retry covers both loads: the tier picker behind "New partner" fails silently
+// on its own, and retrying only the list would leave that form empty with a
+// green-looking panel.
+const reload = async () => {
+  await Promise.all([load(), loadTiers()])
 }
 
 watch([page, status], load)
@@ -165,7 +173,7 @@ const activate = async (tenant) => {
       </button>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="error" :busy="loading" @retry="reload" />
 
     <div class="clay overflow-hidden rounded-2xl bg-surface">
       <div class="overflow-x-auto">
@@ -230,7 +238,10 @@ const activate = async (tenant) => {
                 <span v-else class="text-[11px] text-muted">Closed</span>
               </td>
             </tr>
-            <tr v-if="!loading && !tenants.length">
+                        <tr v-if="loading">
+              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
+            </tr>
+<tr v-if="!loading && !tenants.length">
               <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">
                 No partners match that filter.
               </td>

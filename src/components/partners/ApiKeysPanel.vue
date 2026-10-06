@@ -10,10 +10,11 @@
  * out of a partner's wallet the moment it is compromised, so it does not wait
  * for a confirmation dialog the way a low-stakes form would.
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { partnerApi } from '../../services/partnerApi'
 import { toast } from '../../services/toast'
 import { formatDateTime } from '../../utils/format'
+import LoadError from '../LoadError.vue'
 
 const ALL_SCOPES = [
   { id: 'catalog:read', label: 'Read catalogue', hint: 'List packages and prices' },
@@ -29,6 +30,11 @@ const keys = ref([])
 const loading = ref(false)
 const error = ref('')
 
+// The partner picker and the keys table are two different loads; if the picker
+// one fails the panel must not claim there are no partners to choose from.
+const tenantsError = ref('')
+const loadError = computed(() => tenantsError.value || error.value)
+
 const issuing = ref(false)
 const form = ref({ label: '', scopes: ['catalog:read', 'orders:read'], expires_at: '', ip_allowlist: '' })
 
@@ -39,8 +45,9 @@ const loadTenants = async () => {
   try {
     const res = await partnerApi.getTenants({ per_page: 100 })
     tenants.value = res.data
-  } catch {
-    /* the picker just stays empty */
+    tenantsError.value = ''
+  } catch (err) {
+    tenantsError.value = err?.message || 'Could not load partners.'
   }
 }
 
@@ -61,11 +68,15 @@ const loadKeys = async () => {
   }
 }
 
-onMounted(async () => {
+// Retry re-runs both halves: a failed picker load leaves no partner selected,
+// so reloading only the keys would show an empty table and nothing to fix it.
+const reload = async () => {
   await loadTenants()
-  if (tenants.value.length) tenantId.value = tenants.value[0].id
-  loadKeys()
-})
+  if (!tenantId.value && tenants.value.length) tenantId.value = tenants.value[0].id
+  await loadKeys()
+}
+
+onMounted(reload)
 
 const toggleScope = (scope) => {
   const list = form.value.scopes
@@ -156,7 +167,7 @@ const closeSecret = () => {
       </label>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="loadError" :busy="loading" @retry="reload" />
 
     <template v-if="tenantId">
       <div class="clay rounded-2xl bg-surface p-4 sm:p-5">
@@ -266,7 +277,10 @@ const closeSecret = () => {
                   </button>
                 </td>
               </tr>
-              <tr v-if="!loading && !keys.length">
+                          <tr v-if="loading">
+              <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">Loading…</td>
+            </tr>
+<tr v-if="!loading && !keys.length">
                 <td colspan="6" class="px-4 py-8 text-center text-xs text-muted">
                   No keys for this partner yet.
                 </td>
@@ -277,7 +291,7 @@ const closeSecret = () => {
       </div>
     </template>
 
-    <p v-else-if="!tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
+    <p v-else-if="!tenantsError && !tenants.length" class="rounded-2xl bg-surface py-10 text-center text-xs text-muted">
       Create a partner first.
     </p>
 

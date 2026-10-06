@@ -13,6 +13,7 @@ import { partnerApi } from '../../services/partnerApi'
 import { money } from '../../utils/partners'
 import { formatDate } from '../../utils/format'
 import KpiCard from '../admin/KpiCard.vue'
+import LoadError from '../LoadError.vue'
 
 const from = ref(new Date(Date.now() - 29 * 864e5).toISOString().slice(0, 10))
 const to = ref(new Date().toISOString().slice(0, 10))
@@ -79,7 +80,7 @@ onMounted(load)
       </div>
     </div>
 
-    <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">{{ error }}</p>
+    <LoadError :error="error" :busy="loading" @retry="load" />
 
     <template v-if="overview">
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -179,6 +180,6 @@ onMounted(load)
       </div>
     </template>
 
-    <div v-else-if="loading" class="py-10 text-center text-xs text-muted">Loading…</div>
+    <div v-if="loading" class="py-10 text-center text-xs text-muted">Loading…</div>
   </div>
 </template>

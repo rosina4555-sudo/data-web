@@ -1,5 +1,17 @@
 <script setup>
 import { toasts, dismiss } from '../services/toast'
+
+// A warning is not a success and must not wear its tick: bulk refunds report
+// partial failures as 'warning', and the old markup gave anything that was
+// not an error a tick badge, so "3 of 5 failed" arrived looking like a pass.
+const TONE = {
+  success: { text: 'text-brand', badge: 'bg-brand', glyph: '✓' },
+  error: { text: 'text-red-600', badge: 'bg-red-500', glyph: '!' },
+  warning: { text: 'text-amber-700', badge: 'bg-amber-500', glyph: '!' },
+  info: { text: 'text-brand-dark', badge: 'bg-muted', glyph: 'i' },
+}
+
+const tone = (type) => TONE[type] || TONE.info
 </script>
 
 <template>
@@ -10,17 +22,13 @@ import { toasts, dismiss } from '../services/toast'
           v-for="t in toasts"
           :key="t.id"
           class="clay-sm pointer-events-auto flex w-full max-w-sm items-start gap-2 rounded-2xl border border-brand/10 bg-surface px-3.5 py-3 text-sm font-semibold shadow-lg"
-          :class="{
-            'text-brand-dark': t.type === 'info',
-            'text-red-600': t.type === 'error',
-            'text-brand': t.type === 'success',
-          }"
+          :class="tone(t.type).text"
         >
           <span
             class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white"
-            :class="t.type === 'error' ? 'bg-red-500' : t.type === 'success' ? 'bg-brand' : 'bg-muted'"
+            :class="tone(t.type).badge"
           >
-            {{ t.type === 'error' ? '!' : '✓' }}
+            {{ tone(t.type).glyph }}
           </span>
           <p class="flex-1 leading-snug">{{ t.message }}</p>
           <button

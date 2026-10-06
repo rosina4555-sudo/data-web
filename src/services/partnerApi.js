@@ -177,7 +177,6 @@ export const partnerApi = {
   createAccountType: (data) => call('POST', '/account-types', data),
   updateAccountType: (id, data) => call('PUT', `/account-types/${id}`, data),
   deleteAccountType: (id) => call('DELETE', `/account-types/${id}`),
-  getTierPrices: (id, params) => call('GET', `/account-types/${id}/prices${qs(params)}`),
   saveTierPrices: (id, prices) => call('PUT', `/account-types/${id}/prices`, { prices }),
   getPricingMatrix: (params) => call('GET', `/pricing/matrix${qs(params)}`),
 }

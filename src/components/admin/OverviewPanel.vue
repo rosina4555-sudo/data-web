@@ -102,11 +102,6 @@ const walletOf = (id) => balances.value.find((b) => b.id === id)
 const hasWallet = computed(() => balances.value.length > 0)
 
 const ov = computed(() => overview.value || {})
-const avgDelivery = computed(() => {
-  const m = ov.value.avg_delivery_minutes
-  if (m === null || m === undefined) return '—'
-  return m < 60 ? `${Math.round(m)}m` : m < 1440 ? `${(m / 60).toFixed(1)}h` : `${(m / 1440).toFixed(1)}d`
-})
 </script>
 
 <template>

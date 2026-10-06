@@ -70,22 +70,5 @@ export const auditMeta = (action) =>
 export const isRetryable = (settlement) =>
   settlement?.status === 'failed' || settlement?.status === 'pending'
 
-/**
- * "1.00" → "1" for a minor-unit integer typed by an operator.
- *
- * Deliberately forgiving about units on the *display* side while the backend
- * stays strict about what it accepts: an operator typing 5 means five pesewa or
- * five cedis depending on what they think the box means, and silently
- * multiplying or dividing by 100 on submit is how a 5000-credit becomes a
- * 5000-cedi mistake. The form labels the field explicitly instead.
- */
-export const parseAmountInput = (value) => {
-  const cleaned = String(value ?? '').trim()
-  if (cleaned === '') return null
-  const n = Number(cleaned)
-  if (!Number.isFinite(n)) return null
-  return n
-}
-
 export const newIdempotencyKey = () =>
   `console-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`

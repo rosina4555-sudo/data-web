@@ -58,6 +58,19 @@ const startEdit = (p) =>
   })
 const cancel = () => (editing.value = null)
 
+const del = async (p) => {
+  if (!window.confirm(`Delete bundle ${p.name}? This cannot be undone.`)) return
+  try {
+    await adminApi.deletePackage(p.id)
+    toast('Bundle deleted.', 'success')
+    await load()
+  } catch (err) {
+    // 409 "Package has orders; disable it instead" is the expected answer for
+    // anything that has ever been bought, and it is the useful one to show.
+    toast(err?.message || 'Delete failed.', 'error')
+  }
+}
+
 const networkOptions = computed(() => networks.value)
 const providerPackageOptions = computed(() =>
   editing.value?.network_id
@@ -198,6 +211,7 @@ onMounted(load)
         <div class="mt-4 flex gap-2">
           <button type="button" class="clay-btn-light flex-1 rounded-xl bg-surface py-2 text-xs font-bold text-brand transition hover:bg-brand-soft" @click="startEdit(p)">Edit</button>
           <button type="button" class="flex-1 rounded-xl bg-brand-soft py-2 text-xs font-bold text-brand transition hover:bg-brand/10" @click="toggle(p)">{{ p.is_active ? 'Hide' : 'Show' }}</button>
+          <button type="button" class="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100" @click="del(p)">Del</button>
         </div>
       </div>
     </div>

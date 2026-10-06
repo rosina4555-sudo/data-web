@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { logout } from '../services/auth'
-import { adminApi, getAdmin } from '../services/api'
+import { getAdmin } from '../services/api'
 import Logo from '../components/Logo.vue'
 import OverviewPanel from '../components/admin/OverviewPanel.vue'
 import OrdersPanel from '../components/admin/OrdersPanel.vue'

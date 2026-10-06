@@ -115,7 +115,10 @@ export async function request(method, path, body = null, options = {}) {
     if (data?.error === 'order_state') throw new Error(msg || 'Order is no longer payable.')
     if (data?.error === 'not_sellable') throw new Error(msg || 'This package is no longer available.')
     if (data?.error === 'not_found') throw new Error(msg || 'Order not found.')
-    if (data?.error === 'validation_failed') {
+    // Field errors arrive as { errors: { field: message } } under a plain
+    // "Validation failed" message from several controllers, not only under the
+    // validation_failed code, so the shape is what is matched on.
+    if (data?.error === 'validation_failed' || (data?.errors && typeof data.errors === 'object' && !Array.isArray(data.errors))) {
       const errs = data?.errors
       if (errs && typeof errs === 'object') {
         const first = Object.entries(errs)[0]
@@ -154,7 +157,10 @@ export const adminApi = {
   me: () => request('GET', '/v1/admin/me'),
 
   // Networks
-  getNetworks: () => request('GET', '/v1/admin/networks'),
+  getNetworks: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/networks${qs ? '?' + qs : ''}`)
+  },
   createNetwork: (data) => request('POST', '/v1/admin/networks', data),
   updateNetwork: (id, data) => request('PUT', `/v1/admin/networks/${id}`, data),
   deleteNetwork: (id) => request('DELETE', `/v1/admin/networks/${id}`),
@@ -169,7 +175,17 @@ export const adminApi = {
   deletePackage: (id) => request('DELETE', `/v1/admin/packages/${id}`),
 
   // Providers
-  getProviders: () => request('GET', '/v1/admin/providers'),
+  getProviders: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/providers${qs ? '?' + qs : ''}`)
+  },
+  createProvider: (data) => request('POST', '/v1/admin/providers', data),
+  updateProvider: (id, data) => request('PUT', `/v1/admin/providers/${id}`, data),
+  deleteProvider: (id) => request('DELETE', `/v1/admin/providers/${id}`),
+  // Replaces the provider's linked networks outright — the endpoint takes the
+  // full set, not a delta, so the caller sends every network it wants kept.
+  syncProviderNetworks: (id, networkIds) =>
+    request('POST', `/v1/admin/providers/${id}/networks`, { network_ids: networkIds }),
   getProviderPackages: (params = {}) => {
     const qs = new URLSearchParams(params).toString()
     return request('GET', `/v1/admin/provider-packages${qs ? '?' + qs : ''}`)

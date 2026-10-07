@@ -7,6 +7,7 @@ import { currency } from '../utils/format'
 import PackageCard from '../components/PackageCard.vue'
 import CheckoutModal from '../components/CheckoutModal.vue'
 import Logo from '../components/Logo.vue'
+import SiteHeader from '../components/SiteHeader.vue'
 
 const searchQuery = ref('')
 const networks = ref([])
@@ -147,24 +148,8 @@ const priceSummary = computed(() => {
 
 <template>
   <div class="flex min-h-screen flex-col text-ink">
-    <!-- Header -->
-    <header class="sticky top-0 z-40 border-b border-brand/10 bg-surface/90 backdrop-blur-md">
-      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:h-16">
-        <a href="#/" aria-label="DataPadi home" class="flex shrink-0 items-center">
-          <Logo :size="28" :text-class="'text-lg font-heading font-bold tracking-tight sm:text-xl'" />
-        </a>
-        <nav class="flex items-center gap-3 text-sm font-semibold sm:gap-5">
-          <a href="#/" class="text-brand transition-colors hover:text-accent-dark">Home</a>
-          <a href="#/track" class="flex items-center gap-1.5 text-ink/60 transition-colors hover:text-brand">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-            <span class="hidden sm:inline">Track order</span>
-            <span class="sm:hidden">Track</span>
-          </a>
-          <a href="#/admin" class="hidden items-center gap-1.5 rounded-xl bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand/10 sm:flex">Admin</a>
-          <a href="#/partners" class="hidden items-center gap-1.5 rounded-xl border border-brand/25 px-3 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:flex">Partner console</a>
-        </nav>
-      </div>
-    </header>
+    <!-- Header / navigation -->
+    <SiteHeader />
 
     <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:py-8">
       <!-- Hero -->
@@ -416,17 +401,7 @@ const priceSummary = computed(() => {
             <Logo :size="26" :text-class="'text-lg font-heading font-bold tracking-tight'" />
             <p class="mt-2 text-xs leading-relaxed text-muted sm:text-sm">{{ SITE.tagline }}. Pay with mobile money or card and get connected in seconds.</p>
           </div>
-          <div class="flex flex-wrap gap-10 sm:gap-14">
-            <div>
-              <h3 class="font-heading text-xs font-bold tracking-widest text-brand uppercase">Explore</h3>
-              <ul class="mt-2.5 space-y-2 text-sm font-medium text-ink/60">
-                <li><a href="#/" class="transition-colors hover:text-brand">Bundles</a></li>
-                <li><a href="#/track" class="transition-colors hover:text-brand">Track order</a></li>
-                <li><a href="#/admin" class="transition-colors hover:text-brand">Admin</a></li>
-                <li><a href="#/partners" class="transition-colors hover:text-brand">Partner console</a></li>
-                <li><a href="#/docs" class="transition-colors hover:text-brand">API docs</a></li>
-              </ul>
-            </div>
+<div class="flex flex-wrap gap-10 sm:gap-14">
             <div>
               <h3 class="font-heading text-xs font-bold tracking-widest text-brand uppercase">Support</h3>
               <ul class="mt-2.5 space-y-2 text-sm font-medium text-ink/60">

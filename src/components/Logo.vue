@@ -4,11 +4,12 @@ import { SITE } from '../site'
 defineProps({
   size: { type: Number, default: 32 },
   textClass: { type: String, default: 'text-xl font-heading font-bold tracking-tight' },
+  inverse: { type: Boolean, default: false },
 })
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-2 text-brand-dark">
+  <span class="inline-flex items-center gap-2" :class="inverse ? 'text-white' : 'text-brand-dark'">
     <svg
       :width="size"
       :height="size"

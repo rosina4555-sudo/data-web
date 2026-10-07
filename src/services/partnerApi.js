@@ -113,20 +113,32 @@ export async function partnerLogin(email, password) {
  * sentence, and nothing here may turn that into an oracle.
  */
 export async function consoleLogin(email, password) {
-  const staff = await partnerLogin(email, password)
-  if (staff.ok) {
-    // Exactly one console session at a time. A partner token left over from
-    // last week would otherwise be found first at the door and put somebody
-    // who just signed in as staff onto their partner dashboard instead.
-    clearTenantAuth()
-    return { ok: true, role: 'admin', admin: staff.admin }
+  // An empty password can only be a partner's own account that has never
+  // chosen one (created by the partner admin, activated at first sign-in).
+  // Staff accounts always have a password, so with a blank there is nothing
+  // to try at the operator door — go straight to the tenant one.
+  if (password?.trim()) {
+    const staff = await partnerLogin(email, password)
+    if (staff.ok) {
+      // Exactly one console session at a time. A partner token left over from
+      // last week would otherwise be found first at the door and put somebody
+      // who just signed in as staff onto their partner dashboard instead.
+      clearTenantAuth()
+      return { ok: true, role: 'admin', admin: staff.admin }
+    }
+    if (staff.code !== 'bad_credentials') return staff
   }
-  if (staff.code !== 'bad_credentials') return staff
 
   const partner = await tenantLogin(email, password)
   if (partner.ok) {
     clearPartnerAuth()
-    return { ok: true, role: 'tenant', tenant: partner.tenant }
+    return {
+      ok: true,
+      role: 'tenant',
+      tenant: partner.tenant,
+      // True means: hand them straight to the create-password screen.
+      mustSetPassword: !!partner.mustSetPassword,
+    }
   }
   if (partner.code !== 'bad_credentials') return partner
 

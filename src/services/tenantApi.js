@@ -56,15 +56,19 @@ export function setTenantProfile(tenant) {
 }
 
 export async function tenantLogin(email, password) {
-  if (!email?.trim() || !password) {
-    return { ok: false, code: 'error', error: 'Email and password are required.' }
+  if (!email?.trim()) {
+    return { ok: false, code: 'error', error: 'Email is required.' }
   }
 
+  // The password may be empty on purpose: a tenant created by the partner
+  // admin has no password yet and signs in with the email alone. The server
+  // answers with `must_set_password`, and the dashboard refuses them
+  // everything else until they choose one.
   try {
     const res = await request(
       'POST',
       `${BASE}/login`,
-      { email: email.trim().toLowerCase(), password },
+      { email: email.trim().toLowerCase(), password: password || '' },
       {
         allow401: true,
         tokenKey: TOKEN_KEY,
@@ -79,14 +83,14 @@ export async function tenantLogin(email, password) {
     setToken(data.token, TOKEN_KEY)
     setTenantProfile(data.tenant)
 
-    return { ok: true, tenant: data.tenant }
+    return { ok: true, tenant: data.tenant, mustSetPassword: !!data.must_set_password }
   } catch (err) {
     const msg = err?.message || 'Sign-in failed'
     if (/too many|429|throttl/i.test(msg)) {
       return { ok: false, code: 'rate_limited', error: 'Too many attempts. Please try again later.' }
     }
-    // The server refuses unknown address, unset password and wrong password
-    // with one message, so this is everything a wrong sign-in can say.
+    // The server refuses unknown address and wrong password with one message,
+    // so this is everything a wrong sign-in can say.
     if (/details are not valid/i.test(msg)) {
       return { ok: false, code: 'bad_credentials', error: 'Email or password is not correct.' }
     }

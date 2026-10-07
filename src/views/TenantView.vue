@@ -12,9 +12,10 @@
  * partner console: an expired tenant session must land here and nowhere else,
  * and no panel from the operator's navigation is shared into it.
  */
-import { ref, computed } from 'vue'
-import { tenantLogout, getTenantProfile } from '../services/tenantApi'
+import { ref, computed, onMounted } from 'vue'
+import { tenantLogout, getTenantProfile, tenantApi, setTenantProfile } from '../services/tenantApi'
 import Logo from '../components/Logo.vue'
+import CreatePassword from '../components/tenant/CreatePassword.vue'
 import OverviewPanel from '../components/tenant/OverviewPanel.vue'
 import BuyPanel from '../components/tenant/BuyPanel.vue'
 import OrdersPanel from '../components/tenant/OrdersPanel.vue'
@@ -36,6 +37,31 @@ const tabs = [
 const activeTab = ref('overview')
 const profile = ref(getTenantProfile())
 
+// Storage may predate the flag (a session signed in before this feature), so
+// the server gets the final word before any panel renders. Until that answer
+// arrives nothing mounts: a panel that fired one request before the gate
+// could catch up would show a wall of refusals behind it.
+const ready = ref(false)
+const mustSetPassword = computed(() => !!profile.value?.must_set_password)
+
+onMounted(async () => {
+  try {
+    const fresh = (await tenantApi.getProfile()).data
+    if (fresh?.id) {
+      profile.value = fresh
+      setTenantProfile(fresh)
+    }
+  } catch {
+    // A dead session is already handled by the request wrapper (it lands on
+    // the login screen); a blip falls back to the stored profile.
+  }
+  ready.value = true
+})
+
+const onPasswordSet = (tenant) => {
+  profile.value = tenant
+}
+
 const panels = {
   overview: OverviewPanel,
   buy: BuyPanel,
@@ -49,7 +75,14 @@ const ActivePanel = computed(() => panels[activeTab.value])
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-brand-dark/[0.03] text-ink">
+  <!-- First sign-in: nothing on the dashboard exists until a password does. -->
+  <CreatePassword v-if="ready && mustSetPassword" @password-set="onPasswordSet" />
+
+  <div v-else-if="!ready" class="flex min-h-screen items-center justify-center bg-brand-dark/[0.03]">
+    <div class="h-8 w-8 animate-spin rounded-full border-4 border-brand/15 border-t-brand" />
+  </div>
+
+  <div v-else class="flex min-h-screen flex-col bg-brand-dark/[0.03] text-ink">
     <header class="sticky top-0 z-40 border-b border-brand/10 bg-surface/95 backdrop-blur-md">
       <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:h-16">
         <div class="flex min-w-0 items-center gap-3">

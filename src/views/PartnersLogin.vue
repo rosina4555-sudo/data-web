@@ -39,7 +39,12 @@ const submit = async () => {
   }
 
   if (res.role === 'tenant') {
-    toast('Signed in to your dashboard', 'success')
+    toast(
+      res.mustSetPassword
+        ? 'One more step — choose a password for your account'
+        : 'Signed in to your dashboard',
+      'success',
+    )
     emit('tenant-authenticated')
   } else {
     toast('Signed in to the partner console', 'success')
@@ -64,6 +69,8 @@ const submit = async () => {
       <p class="mt-1 text-xs text-muted">
         One sign-in for both sides. Staff land on the console for managing partners; a
         partner's own account lands on its dashboard — orders, wallet and API keys.
+        New partner account with no password yet? Leave the password blank and sign in
+        with your email — you'll choose a password next.
       </p>
 
       <div class="mt-5 space-y-4">
@@ -86,7 +93,7 @@ const submit = async () => {
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="current-password"
-              required
+              placeholder="Leave blank if you have none yet"
               class="clay-well w-full rounded-2xl bg-bg px-4 py-3 pr-11 text-sm font-medium text-brand-dark outline-none transition placeholder:text-muted/40 focus:bg-surface"
             />
             <button
@@ -111,7 +118,8 @@ const submit = async () => {
       </button>
 
       <p class="mt-4 text-center text-[11px] text-muted">
-        Use the account you were given — we work out which side it belongs to.
+        Use the account you were given — we work out which side it belongs to. Staff must
+        always enter their password.
       </p>
     </form>
   </div>

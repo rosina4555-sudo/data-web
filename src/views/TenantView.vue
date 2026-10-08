@@ -98,7 +98,7 @@ const ActivePanel = computed(() => panels[activeTab.value])
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
             <span class="hidden sm:inline">API docs</span>
           </a>
-          <span class="hidden text-[10px] font-bold tracking-widest text-muted uppercase sm:inline">Partner dashboard</span>
+          <span class="hidden text-[10px] font-bold tracking-widest text-muted uppercase sm:inline">Dealer dashboard</span>
           <button
             type="button"
             class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"

@@ -13,12 +13,12 @@ const hash = ref(window.location.hash || '#/')
 const NAV_LINKS = [
   { href: '#/', label: 'Home', sub: 'Browse data bundles', icon: 'home' },
   { href: '#/track', label: 'Track order', sub: 'Check an order', icon: 'track' },
-  { href: '#/docs', label: 'API docs', sub: 'Reference for partners', icon: 'docs' },
+  { href: '#/docs', label: 'API docs', sub: 'Reference for dealers', icon: 'docs' },
 ]
 
 const PORTALS = [
   { href: '#/admin', label: 'Admin', sub: 'Staff & operations', icon: 'admin' },
-  { href: '#/partners', label: 'Partner console', sub: 'Sell data with us', icon: 'partner' },
+  { href: '#/partners', label: 'Dealer console', sub: 'Sell data with us', icon: 'partner' },
 ]
 
 /* Stroke-based glyphs (lucide-style) — injected into <svg> as trusted static markup. */
@@ -116,7 +116,7 @@ onUnmounted(() => {
       <div class="hidden items-center gap-2.5 md:flex">
         <span class="h-5 w-px bg-brand/10" aria-hidden="true"></span>
         <a href="#/admin" class="rounded-xl bg-brand-soft px-3.5 py-2 text-xs font-bold text-brand transition-colors hover:bg-brand/10">Admin</a>
-        <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-extrabold text-white">Partner console</a>
+        <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-extrabold text-white">Dealer console</a>
       </div>
 
       <!-- Mobile toggle -->

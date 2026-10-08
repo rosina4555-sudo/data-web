@@ -21,7 +21,7 @@ import SettlementsPanel from '../components/partners/SettlementsPanel.vue'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: 'chart' },
-  { id: 'tenants', label: 'Partners', icon: 'users' },
+  { id: 'tenants', label: 'Dealers', icon: 'users' },
   { id: 'tiers', label: 'Tiers', icon: 'layers' },
   { id: 'pricing', label: 'Pricing', icon: 'tag' },
   { id: 'keys', label: 'API keys', icon: 'key' },
@@ -50,11 +50,11 @@ const ActivePanel = computed(() => panels[activeTab.value])
       <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16">
         <div class="flex min-w-0 items-center gap-3">
           <Logo :size="24" :text-class="'text-base font-heading font-bold tracking-tight sm:text-lg'" />
-          <span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] font-extrabold tracking-widest text-brand uppercase">Partners</span>
+          <span class="rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] font-extrabold tracking-widest text-brand uppercase">Dealers</span>
           <span v-if="adminInfo?.email" class="hidden truncate text-xs font-medium text-muted sm:inline">{{ adminInfo.email }}</span>
         </div>
         <div class="flex shrink-0 items-center gap-2">
-          <span class="hidden text-[10px] font-bold tracking-widest text-muted uppercase sm:inline">Partner console</span>
+          <span class="hidden text-[10px] font-bold tracking-widest text-muted uppercase sm:inline">Dealer console</span>
           <button
             type="button"
             class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"

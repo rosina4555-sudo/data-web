@@ -57,7 +57,7 @@ const submit = async () => {
   <div class="flex min-h-screen flex-col items-center justify-center px-4 py-10 text-ink">
     <div class="mb-6 flex flex-col items-center gap-2">
       <Logo :size="40" :text-class="'text-2xl font-heading font-bold tracking-tight'" />
-      <p class="text-xs font-semibold tracking-widest text-muted uppercase">Partner console</p>
+      <p class="text-xs font-semibold tracking-widest text-muted uppercase">Dealer console</p>
     </div>
 
     <form class="clay w-full max-w-sm rounded-3xl bg-surface p-6 sm:p-8" @submit.prevent="submit">
@@ -67,10 +67,7 @@ const submit = async () => {
 
       <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Sign in</h1>
       <p class="mt-1 text-xs text-muted">
-        One sign-in for both sides. Staff land on the console for managing partners; a
-        partner's own account lands on its dashboard — orders, wallet and API keys.
-        New partner account with no password yet? Leave the password blank and sign in
-        with your email — you'll choose a password next.
+       One sign-in for everyone. New dealer account with no password yet? Leave the password blank, sign in with your email, and you will choose a password next.
       </p>
 
       <div class="mt-5 space-y-4">
@@ -118,8 +115,7 @@ const submit = async () => {
       </button>
 
       <p class="mt-4 text-center text-[11px] text-muted">
-        Use the account you were given — we work out which side it belongs to. Staff must
-        always enter their password.
+
       </p>
     </form>
   </div>

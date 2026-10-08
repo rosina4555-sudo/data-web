@@ -99,6 +99,60 @@ export async function tenantLogin(email, password) {
 }
 
 /**
+ * Open a new dealer account. Unlike every other call here this one is
+ * unauthenticated — it *creates* the session it returns, so on success the
+ * token and profile are stored exactly as a sign-in would store them and the
+ * caller can treat the registrant as signed in.
+ */
+export async function tenantRegister({ name, email, phone, password }) {
+  if (!name?.trim() || !email?.trim() || !password) {
+    return { ok: false, code: 'error', error: 'Name, email and password are required.' }
+  }
+  if (password.length < 8) {
+    return { ok: false, code: 'error', error: 'Password must be at least 8 characters.' }
+  }
+
+  try {
+    const res = await request(
+      'POST',
+      `${BASE}/register`,
+      {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        ...(phone?.trim() ? { phone: phone.trim() } : {}),
+        password,
+      },
+      {
+        allow401: true,
+        tokenKey: TOKEN_KEY,
+        adminKey: TENANT_KEY,
+        loginRoute: '#/partners',
+      },
+    )
+
+    const data = res.data || res
+    if (!data.token) return { ok: false, code: 'error', error: 'Registration failed.' }
+
+    setToken(data.token, TOKEN_KEY)
+    setTenantProfile(data.tenant)
+
+    return { ok: true, tenant: data.tenant }
+  } catch (err) {
+    const msg = err?.message || 'Registration failed'
+    if (/too many|429|throttl/i.test(msg)) {
+      return { ok: false, code: 'rate_limited', error: 'Too many attempts. Please try again in a few minutes.' }
+    }
+    if (/already in use/i.test(msg)) {
+      return { ok: false, code: 'email_taken', error: 'An account with that email already exists — try signing in instead.' }
+    }
+    if (/not open right now/i.test(msg)) {
+      return { ok: false, code: 'unavailable', error: msg }
+    }
+    return { ok: false, code: 'error', error: msg }
+  }
+}
+
+/**
  * Is this session still good?
  *
  * Checked against the server rather than trusted from storage: a session that

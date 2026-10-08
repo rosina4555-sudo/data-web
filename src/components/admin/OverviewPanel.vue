@@ -7,7 +7,10 @@ import KpiCard from './KpiCard.vue'
 import BarChart from './BarChart.vue'
 
 const loading = ref(true)
+const dayInput = (d) => d.toISOString().slice(0, 10)
 const rangeDays = ref(14)
+const from = ref(dayInput(new Date(Date.now() - 13 * 864e5)))
+const to = ref(dayInput(new Date()))
 const overview = ref({})
 const daily = ref([])
 const byNetwork = ref([])
@@ -17,13 +20,14 @@ const balances = ref([])
 const walletsLoading = ref(false)
 const loadError = ref('')
 
-const rangeParams = () => {
-  const to = new Date()
-  const from = new Date()
-  from.setDate(to.getDate() - (rangeDays.value - 1))
-  const fmt = (d) => d.toISOString().slice(0, 10)
-  return { from: fmt(from), to: fmt(to) }
-}
+const rangeParams = () => ({ from: from.value, to: to.value })
+
+// Inclusive day count of the window currently shown — a hand-typed range has
+// no preset label, so the charts badge reads off the dates instead.
+const spanDays = computed(() => {
+  const ms = new Date(to.value) - new Date(from.value)
+  return Math.round(ms / 864e5) + 1
+})
 
 const loadWallets = async () => {
   walletsLoading.value = true
@@ -65,6 +69,27 @@ const load = async () => {
 
 const setRange = (d) => {
   rangeDays.value = d
+  from.value = dayInput(new Date(Date.now() - (d - 1) * 864e5))
+  to.value = dayInput(new Date())
+  load()
+}
+
+// Hand-typed dates match no preset, so none stays highlighted — lighting one
+// up would claim a window the inputs no longer show.
+const applyCustom = () => {
+  if (!from.value || !to.value) return
+  // Mirror the API's rules up front so a bad pick doesn't blank the page
+  // with a 422 — the last good window stays on screen instead.
+  if (from.value > to.value) {
+    toast('From date cannot be after the to date.', 'error')
+    return
+  }
+  const span = Math.round((new Date(to.value) - new Date(from.value)) / 864e5) + 1
+  if (span > 366) {
+    toast('Range cannot exceed 366 days.', 'error')
+    return
+  }
+  rangeDays.value = 0
   load()
 }
 onMounted(load)
@@ -112,15 +137,37 @@ const ov = computed(() => overview.value || {})
         <h1 class="font-heading text-lg font-bold tracking-tight text-brand-dark">Sales overview</h1>
         <p class="text-xs font-medium text-muted">{{ ov.period?.from }} → {{ ov.period?.to }}</p>
       </div>
-      <div class="clay-sm flex gap-1 rounded-xl bg-surface p-1">
-        <button
-          v-for="d in [7, 14, 30]"
-          :key="d"
-          type="button"
-          class="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-          :class="rangeDays === d ? 'bg-gradient-to-r from-brand to-brand-dark text-white shadow-sm' : 'text-muted hover:text-brand'"
-          @click="setRange(d)"
-        >{{ d }}d</button>
+      <div class="flex flex-wrap items-end gap-2">
+        <div class="clay-sm flex gap-1 rounded-xl bg-surface p-1">
+          <button
+            v-for="d in [7, 14, 30]"
+            :key="d"
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-xs font-bold transition"
+            :class="rangeDays === d ? 'bg-gradient-to-r from-brand to-brand-dark text-white shadow-sm' : 'text-muted hover:text-brand'"
+            @click="setRange(d)"
+          >{{ d }}d</button>
+        </div>
+        <div class="flex items-end gap-2">
+          <label class="block">
+            <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">From</span>
+            <input
+              v-model="from"
+              type="date"
+              class="clay-well rounded-xl bg-bg px-2.5 py-1.5 text-xs outline-none"
+              @change="applyCustom"
+            />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-[10px] font-bold tracking-widest text-muted uppercase">To</span>
+            <input
+              v-model="to"
+              type="date"
+              class="clay-well rounded-xl bg-bg px-2.5 py-1.5 text-xs outline-none"
+              @change="applyCustom"
+            />
+          </label>
+        </div>
       </div>
     </div>
 
@@ -148,7 +195,7 @@ const ov = computed(() => overview.value || {})
         <div class="clay rounded-3xl bg-surface p-4 sm:p-5">
           <div class="mb-3 flex items-center justify-between">
             <h2 class="font-heading text-sm font-bold text-brand-dark">Orders per day</h2>
-            <span class="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-extrabold text-brand uppercase">{{ rangeDays }}d</span>
+            <span class="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-extrabold text-brand uppercase">{{ spanDays }}d</span>
           </div>
           <BarChart :data="ordersChart" :height="'12rem'" bar-color="from-brand to-accent" />
         </div>

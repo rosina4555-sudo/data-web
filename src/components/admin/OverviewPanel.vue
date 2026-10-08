@@ -8,8 +8,15 @@ import BarChart from './BarChart.vue'
 
 const loading = ref(true)
 const dayInput = (d) => d.toISOString().slice(0, 10)
-const rangeDays = ref(14)
-const from = ref(dayInput(new Date(Date.now() - 13 * 864e5)))
+
+const PRESETS = [
+  { id: 'today', label: 'Today' },
+  { id: 'week', label: '1 week' },
+  { id: 'month', label: '1 month' },
+  { id: 'all', label: 'All time' },
+]
+const preset = ref('month')
+const from = ref(dayInput(new Date(Date.now() - 29 * 864e5)))
 const to = ref(dayInput(new Date()))
 const overview = ref({})
 const daily = ref([])
@@ -20,11 +27,17 @@ const balances = ref([])
 const walletsLoading = ref(false)
 const loadError = ref('')
 
-const rangeParams = () => ({ from: from.value, to: to.value })
+// "All time" needs no client-side start date: the API resolves it to the
+// first day of data, which the inputs are synced to once the response lands.
+const rangeParams = () =>
+  preset.value === 'all'
+    ? { from: 'all', to: dayInput(new Date()) }
+    : { from: from.value, to: to.value }
 
 // Inclusive day count of the window currently shown — a hand-typed range has
 // no preset label, so the charts badge reads off the dates instead.
 const spanDays = computed(() => {
+  if (!from.value || !to.value) return 0
   const ms = new Date(to.value) - new Date(from.value)
   return Math.round(ms / 864e5) + 1
 })
@@ -59,6 +72,12 @@ const load = async () => {
     byNetwork.value = net.data || net
     byProvider.value = prov.data || prov
     topPackages.value = top.data || top
+    // All time comes back resolved to a real start date — show it in the
+    // inputs so the window on screen matches the window in the data.
+    if (preset.value === 'all' && overview.value.period) {
+      from.value = overview.value.period.from
+      to.value = overview.value.period.to
+    }
   } catch (err) {
     loadError.value = err?.message || 'Failed to load analytics.'
     toast(loadError.value, 'error')
@@ -67,10 +86,20 @@ const load = async () => {
   }
 }
 
-const setRange = (d) => {
-  rangeDays.value = d
-  from.value = dayInput(new Date(Date.now() - (d - 1) * 864e5))
-  to.value = dayInput(new Date())
+const applyPreset = (id) => {
+  preset.value = id
+  const now = new Date()
+  if (id === 'today') {
+    from.value = dayInput(now)
+    to.value = dayInput(now)
+  } else if (id === 'week') {
+    from.value = dayInput(new Date(now - 6 * 864e5))
+    to.value = dayInput(now)
+  } else if (id === 'month') {
+    from.value = dayInput(new Date(now - 29 * 864e5))
+    to.value = dayInput(now)
+  }
+  // 'all' sends from=all — the inputs sync from the response period.
   load()
 }
 
@@ -79,17 +108,26 @@ const setRange = (d) => {
 const applyCustom = () => {
   if (!from.value || !to.value) return
   // Mirror the API's rules up front so a bad pick doesn't blank the page
-  // with a 422 — the last good window stays on screen instead.
+  // with a 422 — the last good window stays on screen instead. The inputs
+  // are rewound to that window so what is on screen always matches the data.
+  const reject = (msg) => {
+    toast(msg, 'error')
+    const p = overview.value?.period
+    if (p) {
+      from.value = p.from
+      to.value = p.to
+    }
+  }
   if (from.value > to.value) {
-    toast('From date cannot be after the to date.', 'error')
+    reject('From date cannot be after the to date.')
     return
   }
   const span = Math.round((new Date(to.value) - new Date(from.value)) / 864e5) + 1
   if (span > 366) {
-    toast('Range cannot exceed 366 days.', 'error')
+    reject('Pick a range up to 366 days, or use All time.')
     return
   }
-  rangeDays.value = 0
+  preset.value = null
   load()
 }
 onMounted(load)
@@ -140,13 +178,13 @@ const ov = computed(() => overview.value || {})
       <div class="flex flex-wrap items-end gap-2">
         <div class="clay-sm flex gap-1 rounded-xl bg-surface p-1">
           <button
-            v-for="d in [7, 14, 30]"
-            :key="d"
+            v-for="p in PRESETS"
+            :key="p.id"
             type="button"
-            class="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-            :class="rangeDays === d ? 'bg-gradient-to-r from-brand to-brand-dark text-white shadow-sm' : 'text-muted hover:text-brand'"
-            @click="setRange(d)"
-          >{{ d }}d</button>
+            class="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold transition"
+            :class="preset === p.id ? 'bg-gradient-to-r from-brand to-brand-dark text-white shadow-sm' : 'text-muted hover:text-brand'"
+            @click="applyPreset(p.id)"
+          >{{ p.label }}</button>
         </div>
         <div class="flex items-end gap-2">
           <label class="block">
@@ -195,7 +233,7 @@ const ov = computed(() => overview.value || {})
         <div class="clay rounded-3xl bg-surface p-4 sm:p-5">
           <div class="mb-3 flex items-center justify-between">
             <h2 class="font-heading text-sm font-bold text-brand-dark">Orders per day</h2>
-            <span class="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-extrabold text-brand uppercase">{{ spanDays }}d</span>
+            <span class="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-extrabold text-brand uppercase">{{ preset === 'all' ? 'All time' : spanDays + 'd' }}</span>
           </div>
           <BarChart :data="ordersChart" :height="'12rem'" bar-color="from-brand to-accent" />
         </div>

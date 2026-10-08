@@ -27,7 +27,14 @@ const barStyle = (d) => {
   return { height: `${pct}%`, minHeight: pct > 0 ? '4px' : '0' }
 }
 
-const showLabel = (i) => props.data.length <= 7 || i % 2 === 0
+// With all-time ranges the series can be hundreds of days long; labeling
+// every other bar would still be ~100 labels fighting for the axis, so the
+// stride scales to keep roughly a dozen legible.
+const showLabel = (i) => {
+  if (props.data.length <= 7) return true
+  const stride = Math.max(2, Math.ceil(props.data.length / 12))
+  return i % stride === 0
+}
 
 const barPosition = (i) => {
   const count = props.data.length

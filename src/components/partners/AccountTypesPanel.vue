@@ -28,11 +28,11 @@ const blank = () => ({
   name: '',
   code: '',
   description: '',
-  min_topup_minor: 0,
+  min_topup_minor: 1000,
   is_default: false,
   is_active: true,
   sort_order: 0,
-  rate_multiplier_bps: 10000,
+  markup_bps: 0,
 })
 
 const draft = ref(blank())
@@ -52,7 +52,7 @@ const openEdit = (tier) => {
     is_default: tier.is_default,
     is_active: tier.is_active,
     sort_order: tier.sort_order,
-    rate_multiplier_bps: tier.rate_multiplier_bps,
+    markup_bps: tier.markup_bps,
   }
 }
 
@@ -82,7 +82,7 @@ const save = async () => {
     ...draft.value,
     min_topup_minor: Number(draft.value.min_topup_minor) || 0,
     sort_order: Number(draft.value.sort_order) || 0,
-    rate_multiplier_bps: Number(draft.value.rate_multiplier_bps) || 0,
+    markup_bps: Number(draft.value.markup_bps) || 0,
   }
   try {
     if (editing.value === 'new') {
@@ -186,12 +186,8 @@ const retire = async (tier) => {
           </div>
           <div class="flex justify-between">
             <dt class="text-muted">Mark-up</dt>
-            <dd class="font-bold text-brand-dark">{{ (tier.rate_multiplier_bps / 100).toFixed(0) }}%</dd>
-          </div>
-          <div class="flex justify-between">
-            <dt class="text-muted">Order cap</dt>
             <dd class="font-bold text-brand-dark">
-              {{ tier.max_order_minor ? money(tier.max_order_minor) : 'None' }}
+              {{ tier.markup_bps ? `+${(tier.markup_bps / 100).toFixed(0)}%` : 'None' }}
             </dd>
           </div>
         </dl>
@@ -266,8 +262,8 @@ const retire = async (tier) => {
               </label>
               <label class="block">
                 <span class="mb-1 block text-xs font-bold text-brand-dark/70">Mark-up (bps)</span>
-                <input v-model="draft.rate_multiplier_bps" type="number" min="0" step="50" class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none" />
-                <span class="mt-1 block text-[10px] text-muted">10000 = no mark-up on top of partner price.</span>
+                <input v-model="draft.markup_bps" type="number" min="0" step="50" class="clay-well w-full rounded-xl bg-bg px-3 py-2.5 text-sm outline-none" />
+                <span class="mt-1 block text-[10px] text-muted">Added to provider cost when this tier prices from cost: 500 = +5%. 0 = none.</span>
               </label>
             </div>
 

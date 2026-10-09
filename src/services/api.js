@@ -115,6 +115,12 @@ export async function request(method, path, body = null, options = {}) {
     if (data?.error === 'order_state') throw new Error(msg || 'Order is no longer payable.')
     if (data?.error === 'not_sellable') throw new Error(msg || 'This package is no longer available.')
     if (data?.error === 'not_found') throw new Error(msg || 'Order not found.')
+    // A 5xx with no problem detail is the server failing, not the browser's
+    // network. Saying "check your connection" there sends people to their
+    // router for a fault on our side — report what actually happened.
+    if (res.status >= 500 && !msg && !data?.error) {
+      throw new Error(`The server ran into a problem (${res.status}). Please try again in a moment.`)
+    }
     // Field errors arrive as { errors: { field: message } } under a plain
     // "Validation failed" message from several controllers, not only under the
     // validation_failed code, so the shape is what is matched on.

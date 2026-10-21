@@ -409,6 +409,12 @@ const priceSummary = computed(() => {
                 <li><a :href="`tel:${SITE.supportPhone.replace(/\s/g, '')}`" class="transition-colors hover:text-brand">{{ SITE.supportPhone }}</a></li>
               </ul>
             </div>
+            <div>
+              <h3 class="font-heading text-xs font-bold tracking-widest text-brand uppercase">Operators</h3>
+              <ul class="mt-2.5 space-y-2 text-sm font-medium text-ink/60">
+                <li><a href="#/admin" class="transition-colors hover:text-brand">Admin login</a></li>
+              </ul>
+            </div>
           </div>
         </div>
         <p class="mt-6 border-t border-brand/10 pt-4 text-center text-[11px] font-medium text-muted/70">{{ SITE.copyright }}</p>

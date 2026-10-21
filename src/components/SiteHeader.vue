@@ -16,9 +16,11 @@ const NAV_LINKS = [
   { href: '#/docs', label: 'API docs', sub: 'Reference for dealers', icon: 'docs' },
 ]
 
+// The admin console has no navbar action on purpose — it is a staff door, and
+// a prominent one invites shoppers to wander into a login they cannot use. It
+// lives in the page footer instead.
 const PORTALS = [
-  { href: '#/admin', label: 'Admin', sub: 'Staff & operations', icon: 'admin' },
-  { href: '#/partners', label: 'Dealer console', sub: 'Sell data with us', icon: 'partner' },
+  { href: '#/partners', label: 'Dealer console', sub: 'Sell data with us', icon: 'partner', primary: true },
 ]
 
 /* Stroke-based glyphs (lucide-style) — injected into <svg> as trusted static markup. */
@@ -29,7 +31,6 @@ const ICON_PATHS = {
   home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
   track: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>',
   docs: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
-  admin: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   partner: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
 }
 
@@ -38,7 +39,6 @@ const TILE = {
   home: 'from-brand to-emerald-400',
   track: 'from-accent to-accent-dark',
   docs: 'from-sky-400 to-indigo-500',
-  admin: 'from-teal-500 to-brand',
   partner: 'from-accent to-accent-dark',
 }
 
@@ -115,7 +115,6 @@ onUnmounted(() => {
 
       <div class="hidden items-center gap-2.5 md:flex">
         <span class="h-5 w-px bg-brand/10" aria-hidden="true"></span>
-        <a href="#/admin" class="rounded-xl bg-brand-soft px-3.5 py-2 text-xs font-bold text-brand transition-colors hover:bg-brand/10">Admin</a>
         <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-extrabold text-white">Dealer console</a>
       </div>
 
@@ -183,17 +182,17 @@ onUnmounted(() => {
               :key="p.label"
               :href="p.href"
               class="dp-nav-item flex items-center gap-3.5 rounded-2xl px-3.5 py-3 transition-all duration-300"
-              :class="i === 1
+              :class="p.primary
                 ? 'clay-btn bg-gradient-to-r from-accent to-accent-dark text-white'
                 : 'border border-white/15 bg-white/[0.06] text-white hover:bg-white/10'"
               :style="{ animationDelay: `${430 + i * 60}ms` }"
             >
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :class="i === 1 ? 'bg-white/20' : 'bg-white/10'">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :class="p.primary ? 'bg-white/20' : 'bg-white/10'">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" v-html="ICON_PATHS[p.icon]"></svg>
               </span>
               <span class="flex-1">
                 <span class="block font-heading text-sm font-bold tracking-tight">{{ p.label }}</span>
-                <span class="block text-xs font-medium" :class="i === 1 ? 'text-white/70' : 'text-white/50'">{{ p.sub }}</span>
+                <span class="block text-xs font-medium" :class="p.primary ? 'text-white/70' : 'text-white/50'">{{ p.sub }}</span>
               </span>
               <svg class="h-4 w-4 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" v-html="ICON_PATHS.chevron"></svg>
             </a>

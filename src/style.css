@@ -67,20 +67,20 @@
     scrollbar-width: none;
   }
 
-  /* ── Claymorphism: soft, puffy, solid-3D look (richwifi heritage) ── */
+  /* ── Card elevation ──
+     Formal and restrained: a hairline contact shadow plus one tight ambient
+     shadow, and no inset highlight — the old claymorphism puff (white top
+     line + coloured drop shadow) read as playful rather than professional.
+     White cards pair this with a 1px brand border for crisp separation. */
 
   .clay {
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.55),
-      inset 0 -2px 4px rgba(11, 46, 32, 0.05),
-      0 14px 28px -10px rgba(11, 46, 32, 0.22),
-      0 3px 8px rgba(11, 46, 32, 0.07);
+      0 1px 2px rgba(11, 46, 32, 0.05),
+      0 4px 14px -8px rgba(11, 46, 32, 0.12);
   }
 
   .clay-sm {
-    box-shadow:
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
-      0 4px 10px -3px rgba(11, 46, 32, 0.18);
+    box-shadow: 0 1px 2px rgba(11, 46, 32, 0.05);
   }
 
   .clay-well {
@@ -91,9 +91,9 @@
 
   .clay-btn {
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.28),
-      inset 0 -4px 0 rgba(11, 46, 32, 0.3),
-      0 8px 16px -6px rgba(13, 122, 77, 0.55);
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -3px 0 rgba(11, 46, 32, 0.22),
+      0 6px 12px -8px rgba(13, 122, 77, 0.4);
     transition:
       transform 120ms ease,
       box-shadow 120ms ease,
@@ -105,16 +105,16 @@
   .clay-btn:active {
     transform: translateY(3px);
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.2),
-      inset 0 -1px 0 rgba(11, 46, 32, 0.3),
-      0 3px 8px -4px rgba(13, 122, 77, 0.5);
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(11, 46, 32, 0.22),
+      0 2px 6px -4px rgba(13, 122, 77, 0.35);
   }
 
   .clay-btn-light {
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.9),
-      inset 0 -4px 0 rgba(11, 46, 32, 0.12),
-      0 8px 16px -6px rgba(11, 46, 32, 0.28);
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -3px 0 rgba(11, 46, 32, 0.1),
+      0 4px 10px -7px rgba(11, 46, 32, 0.2);
     transition:
       transform 120ms ease,
       box-shadow 120ms ease;
@@ -123,16 +123,16 @@
     transform: translateY(3px);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      inset 0 -1px 0 rgba(11, 46, 32, 0.12),
-      0 3px 8px -4px rgba(11, 46, 32, 0.22);
+      inset 0 -1px 0 rgba(11, 46, 32, 0.1),
+      0 2px 6px -5px rgba(11, 46, 32, 0.18);
   }
 
   /* "Buy" button — 3D clay press effect with a per-network glow (--buy-glow). */
   .clay-btn-buy {
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -4px 0 rgba(0, 0, 0, 0.28),
-      0 8px 18px -6px var(--buy-glow, rgba(245, 166, 35, 0.6));
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.22),
+      0 6px 14px -8px var(--buy-glow, rgba(245, 166, 35, 0.6));
     transition:
       transform 120ms ease,
       box-shadow 120ms ease,
@@ -144,17 +144,17 @@
   .clay-btn-buy:active {
     transform: translateY(3px);
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.28),
-      0 3px 8px -4px var(--buy-glow, rgba(245, 166, 35, 0.5));
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+      0 3px 8px -6px var(--buy-glow, rgba(245, 166, 35, 0.5));
   }
 
   /* Gold "buy" button with warm glow */
   .clay-btn-gold {
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -4px 0 rgba(120, 72, 0, 0.32),
-      0 8px 18px -6px rgba(245, 166, 35, 0.6);
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -3px 0 rgba(120, 72, 0, 0.26),
+      0 6px 14px -8px rgba(245, 166, 35, 0.5);
     transition:
       transform 120ms ease,
       box-shadow 120ms ease,
@@ -166,9 +166,9 @@
   .clay-btn-gold:active {
     transform: translateY(3px);
     box-shadow:
-      inset 0 2px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(120, 72, 0, 0.32),
-      0 3px 8px -4px rgba(245, 166, 35, 0.5);
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 rgba(120, 72, 0, 0.26),
+      0 3px 8px -6px rgba(245, 166, 35, 0.4);
   }
 }
 /* Refund guarantee popup entrance / exit */

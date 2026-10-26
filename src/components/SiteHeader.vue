@@ -115,7 +115,7 @@ onUnmounted(() => {
 
       <div class="hidden items-center gap-2.5 md:flex">
         <span class="h-5 w-px bg-brand/10" aria-hidden="true"></span>
-        <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-extrabold text-white">Dealer console</a>
+        <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-bold text-white">Dealer console</a>
       </div>
 
       <!-- Mobile toggle -->
@@ -152,7 +152,7 @@ onUnmounted(() => {
 
       <nav class="relative z-10 flex-1 overflow-y-auto px-4 pb-10 sm:px-6">
         <div class="mx-auto w-full max-w-md">
-          <p class="dp-nav-item px-1 text-[10px] font-extrabold tracking-[0.25em] text-accent uppercase" style="animation-delay: 40ms">Menu</p>
+          <p class="dp-nav-item px-1 text-[10px] font-bold tracking-[0.25em] text-accent uppercase" style="animation-delay: 40ms">Menu</p>
           <div class="mt-3 space-y-2.5">
             <a
               v-for="(link, i) in NAV_LINKS"
@@ -175,7 +175,7 @@ onUnmounted(() => {
             </a>
           </div>
 
-          <p class="dp-nav-item mt-7 px-1 text-[10px] font-extrabold tracking-[0.25em] text-accent uppercase" style="animation-delay: 360ms">Portals</p>
+          <p class="dp-nav-item mt-7 px-1 text-[10px] font-bold tracking-[0.25em] text-accent uppercase" style="animation-delay: 360ms">Portals</p>
           <div class="mt-3 space-y-2.5">
             <a
               v-for="(p, i) in PORTALS"

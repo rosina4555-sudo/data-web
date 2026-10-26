@@ -158,7 +158,7 @@ const priceSummary = computed(() => {
         <div class="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
         <div class="pointer-events-none absolute -bottom-16 -right-10 h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
 
-        <span class="clay-sm inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-extrabold tracking-widest text-white/90 uppercase">
+        <span class="clay-sm inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold tracking-wider text-white/90 uppercase">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="15" width="3" height="5.5" rx="1"/><rect x="8.5" y="11" width="3" height="9.5" rx="1"/><rect x="14.5" y="7" width="3" height="13.5" rx="1"/></svg>
           {{ SITE.networksServed }}
         </span>
@@ -180,23 +180,23 @@ const priceSummary = computed(() => {
               class="w-full rounded-2xl border border-white/15 bg-black/15 py-3 pr-4 pl-10 text-sm font-medium text-white placeholder:text-white/55 focus:border-white/35 focus:outline-none"
             />
           </div>
-          <button type="submit" class="clay-btn-light shrink-0 rounded-2xl bg-surface px-5 py-3 text-sm font-extrabold text-brand sm:px-7">Search</button>
+          <button type="submit" class="clay-btn-light shrink-0 rounded-2xl bg-surface px-5 py-3 text-sm font-bold text-brand sm:px-7">Search</button>
         </form>
 
         <div class="mx-auto mt-5 flex max-w-md items-center justify-center gap-4 text-center sm:mt-6">
           <div>
-            <p class="font-heading text-sm font-black text-white sm:text-lg">{{ networks.length }}</p>
-            <p class="text-[10px] font-bold tracking-widest text-white/70 uppercase">Networks</p>
+            <p class="font-heading text-sm font-bold text-white sm:text-lg">{{ networks.length }}</p>
+            <p class="text-[10px] font-bold tracking-wider text-white/70 uppercase">Networks</p>
           </div>
           <span class="h-8 w-px bg-white/25"></span>
           <div>
-            <p class="font-heading text-sm font-black text-white sm:text-lg">{{ packages.length || '—' }}</p>
-            <p class="text-[10px] font-bold tracking-widest text-white/70 uppercase">Bundles</p>
+            <p class="font-heading text-sm font-bold text-white sm:text-lg">{{ packages.length || '—' }}</p>
+            <p class="text-[10px] font-bold tracking-wider text-white/70 uppercase">Bundles</p>
           </div>
           <span class="h-8 w-px bg-white/25"></span>
           <div>
-            <p class="font-heading text-sm font-black text-white sm:text-lg">{{ priceSummary }}</p>
-            <p class="text-[10px] font-bold tracking-widest text-white/70 uppercase">Price range</p>
+            <p class="font-heading text-sm font-bold text-white sm:text-lg">{{ priceSummary }}</p>
+            <p class="text-[10px] font-bold tracking-wider text-white/70 uppercase">Price range</p>
           </div>
         </div>
       </section>
@@ -204,7 +204,7 @@ const priceSummary = computed(() => {
       <!-- Refund guarantee popup -->
       <Transition name="dp-pop">
         <section v-if="!noticeDismissed && noticeVisible" class="pointer-events-none fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[27rem]">
-          <div class="clay pointer-events-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent p-4 pr-10 text-white shadow-2xl shadow-brand-dark/50 sm:p-5 sm:pr-11">
+          <div class="clay pointer-events-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent p-4 pr-10 text-white sm:p-5 sm:pr-11">
             <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#ffffff2e,transparent_55%)]"></div>
             <div class="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
 
@@ -240,7 +240,7 @@ const priceSummary = computed(() => {
                 <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/15">
                   <svg class="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 </span>
-                Only unverified numbers fail
+                Refunds on failed orders
               </li>
             </ul>
 
@@ -248,7 +248,7 @@ const priceSummary = computed(() => {
               :href="REFUND_POLICY_URL"
               target="_blank"
               rel="noopener noreferrer"
-              class="clay-btn-light mt-3 inline-flex items-center rounded-xl bg-surface px-3.5 py-2 text-xs font-extrabold whitespace-nowrap text-brand"
+              class="clay-btn-light mt-3 inline-flex items-center rounded-xl bg-surface px-3.5 py-2 text-xs font-bold whitespace-nowrap text-brand"
             >
               How Paystack refunds work ↗
             </a>
@@ -264,7 +264,7 @@ const priceSummary = computed(() => {
       </section>
 
       <section v-else-if="loadError" class="mt-6 sm:mt-10">
-        <div class="clay flex flex-col items-center justify-center rounded-3xl bg-surface py-12 text-center">
+        <div class="clay flex flex-col items-center justify-center rounded-3xl border border-brand/10 bg-surface py-12 text-center">
           <p class="font-heading text-base font-bold text-red-600">Could not load bundles</p>
           <p class="mt-1 text-sm text-muted">{{ loadError }}</p>
           <button type="button" class="mt-3 rounded-xl bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100" @click="window.location.reload()">Retry</button>
@@ -308,10 +308,10 @@ const priceSummary = computed(() => {
           </div>
 
           <div v-if="packagesLoading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
-            <div v-for="i in 3" :key="i" class="clay h-72 animate-pulse rounded-3xl bg-surface"></div>
+            <div v-for="i in 3" :key="i" class="clay h-72 animate-pulse rounded-3xl border border-brand/10 bg-surface"></div>
           </div>
 
-          <div v-else-if="packagesError" class="clay flex items-center justify-center gap-3 rounded-3xl bg-surface py-10 text-center">
+          <div v-else-if="packagesError" class="clay flex items-center justify-center gap-3 rounded-3xl border border-brand/10 bg-surface py-10 text-center">
             <p class="text-sm font-semibold text-red-600">{{ packagesError }}</p>
             <button type="button" class="rounded-xl bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100" @click="loadPackages(selectedNetwork.id, true)">Retry</button>
           </div>
@@ -351,7 +351,7 @@ const priceSummary = computed(() => {
             </div>
           </template>
 
-          <div v-else class="clay flex flex-col items-center justify-center rounded-3xl bg-surface py-10 text-center">
+          <div v-else class="clay flex flex-col items-center justify-center rounded-3xl border border-brand/10 bg-surface py-10 text-center">
             <p class="font-heading text-base font-bold text-brand-dark/70">No bundles for {{ selectedNetwork?.code }}</p>
             <p class="mt-1 text-sm text-muted">Try another network.</p>
           </div>
@@ -361,7 +361,7 @@ const priceSummary = computed(() => {
         <section class="mt-8 sm:mt-14">
           <h2 class="font-heading text-center text-lg font-bold tracking-tight text-brand-dark sm:text-2xl">How it works</h2>
           <div class="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-5">
-            <div class="clay flex items-start gap-3 rounded-2xl bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
+            <div class="clay flex items-start gap-3 rounded-2xl border border-brand/10 bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
@@ -370,7 +370,7 @@ const priceSummary = computed(() => {
                 <p class="mt-0.5 text-xs leading-relaxed text-muted sm:text-sm">Choose your network and data size. Prices are shown upfront, no surprises.</p>
               </div>
             </div>
-            <div class="clay flex items-start gap-3 rounded-2xl bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
+            <div class="clay flex items-start gap-3 rounded-2xl border border-brand/10 bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-dark text-white">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18l-2 9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Z"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
               </span>
@@ -379,7 +379,7 @@ const priceSummary = computed(() => {
                 <p class="mt-0.5 text-xs leading-relaxed text-muted sm:text-sm">Pay with Mobile Money or card — powered securely by Paystack, in the app.</p>
               </div>
             </div>
-            <div class="clay flex items-start gap-3 rounded-2xl bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
+            <div class="clay flex items-start gap-3 rounded-2xl border border-brand/10 bg-surface p-4 sm:flex-col sm:gap-3 sm:p-5">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-accent text-white">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>
               </span>
@@ -395,29 +395,34 @@ const priceSummary = computed(() => {
 
     <!-- Footer -->
     <footer class="mt-8 shrink-0 border-t border-brand/10 bg-surface sm:mt-12">
-      <div class="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-        <div class="flex flex-col items-start justify-between gap-6 sm:flex-row sm:gap-8">
+      <div class="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+        <div class="flex flex-col items-start justify-between gap-8 sm:flex-row sm:gap-10">
           <div class="max-w-sm">
             <Logo :size="26" :text-class="'text-lg font-heading font-bold tracking-tight'" />
             <p class="mt-2 text-xs leading-relaxed text-muted sm:text-sm">{{ SITE.tagline }}. Pay with mobile money or card and get connected in seconds.</p>
           </div>
-<div class="flex flex-wrap gap-10 sm:gap-14">
+          <div class="flex flex-wrap gap-10 sm:gap-14">
             <div>
-              <h3 class="font-heading text-xs font-bold tracking-widest text-brand uppercase">Support</h3>
+              <h3 class="font-heading text-xs font-bold tracking-wider text-brand uppercase">Support</h3>
               <ul class="mt-2.5 space-y-2 text-sm font-medium text-ink/60">
                 <li><a :href="`mailto:${SITE.supportEmail}`" class="transition-colors hover:text-brand">{{ SITE.supportEmail }}</a></li>
                 <li><a :href="`tel:${SITE.supportPhone.replace(/\s/g, '')}`" class="transition-colors hover:text-brand">{{ SITE.supportPhone }}</a></li>
               </ul>
             </div>
-            <div>
-              <h3 class="font-heading text-xs font-bold tracking-widest text-brand uppercase">Operators</h3>
-              <ul class="mt-2.5 space-y-2 text-sm font-medium text-ink/60">
-                <li><a href="#/admin" class="transition-colors hover:text-brand">Admin login</a></li>
-              </ul>
-            </div>
           </div>
         </div>
-        <p class="mt-6 border-t border-brand/10 pt-4 text-center text-[11px] font-medium text-muted/70">{{ SITE.copyright }}</p>
+        <div class="mt-8 flex flex-col items-center gap-2 border-t border-brand/10 pt-5 text-center text-[11px] font-medium text-muted/70 sm:flex-row sm:justify-between sm:gap-4 sm:text-left">
+          <p>{{ SITE.copyright }}</p>
+          <p>
+            Designed &amp; built by
+            <a
+              :href="SITE.builtBy.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-bold text-brand transition-colors hover:text-accent-dark"
+            >{{ SITE.builtBy.name }} ↗</a>
+          </p>
+        </div>
       </div>
     </footer>
 

@@ -27,7 +27,7 @@ const perks = computed(() => {
 
 <template>
   <article
-    class="clay group mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-brand/10 bg-surface text-ink transition-transform duration-300 hover:-translate-y-1 md:mx-0 md:max-w-none"
+    class="clay group mx-auto flex max-w-md flex-col overflow-hidden rounded-3xl border border-brand/10 bg-surface text-ink transition-transform duration-300 hover:-translate-y-0.5 md:mx-0 md:max-w-none"
     :class="featured ? 'ring-2 ring-accent/40' : ''"
   >
     <!-- Gradient cap -->
@@ -46,14 +46,14 @@ const perks = computed(() => {
             <rect x="20.5" y="3" width="1.5" height="17.5" rx="0.75" opacity="0.75" />
           </svg>
           <div class="text-left">
-            <p class="font-heading text-2xl font-black leading-none sm:text-3xl">{{ pkg.name }}</p>
-            <p class="mt-1 text-xs font-bold tracking-widest opacity-90 uppercase">{{ SITE.networksServed }}</p>
+            <p class="font-heading text-2xl font-bold leading-none sm:text-3xl">{{ pkg.name }}</p>
+            <p class="mt-1 text-xs font-bold tracking-wider opacity-90 uppercase">{{ SITE.networksServed }}</p>
           </div>
         </div>
       </div>
       <span
         v-if="featured"
-        class="clay-sm absolute top-5 right-5 rounded-full bg-surface px-2.5 py-1 text-[10px] font-extrabold tracking-wider text-accent-dark uppercase"
+        class="clay-sm absolute top-5 right-5 rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold tracking-wider text-accent-dark uppercase"
       >
         Best value
       </span>
@@ -74,14 +74,14 @@ const perks = computed(() => {
 
       <div class="mt-3 flex items-end justify-between gap-3">
         <div>
-          <p class="text-[10px] font-bold tracking-widest text-muted uppercase">Price</p>
-          <p class="font-heading text-2xl font-black tracking-tight text-brand sm:text-3xl">
+          <p class="text-[10px] font-bold tracking-wider text-muted uppercase">Price</p>
+          <p class="font-heading text-2xl font-bold tracking-tight text-brand sm:text-3xl">
             {{ currency(priceRaw) }}
           </p>
         </div>
         <span
           v-if="NETWORK_COLORS[network.code]"
-          class="rounded-full bg-gradient-to-r px-2.5 py-1 text-[10px] font-extrabold tracking-wider uppercase"
+          class="rounded-full bg-gradient-to-r px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase"
           :class="NETWORK_COLORS[network.code]"
         >
           {{ network.code }}
@@ -91,7 +91,7 @@ const perks = computed(() => {
       <button
         type="button"
         @click="emit('buy', pkg)"
-        class="clay-btn-buy mt-4 w-full shrink-0 rounded-2xl bg-gradient-to-r py-2.5 text-sm font-extrabold tracking-wide text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none sm:py-3"
+        class="clay-btn-buy mt-4 w-full shrink-0 rounded-2xl bg-gradient-to-r py-2.5 text-sm font-bold tracking-wide text-white focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none sm:py-3"
         :class="buyBtn.grad"
         :style="{ '--buy-glow': buyBtn.glow }"
       >

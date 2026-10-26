@@ -5,7 +5,8 @@ import { openPaystack } from '../services/payment'
 import { currency, isActivePayment } from '../utils/format'
 import { toast } from '../services/toast'
 import StatusPill from '../components/StatusPill.vue'
-import Logo from '../components/Logo.vue'
+import SiteHeader from '../components/SiteHeader.vue'
+import { SITE } from '../site'
 
 const query = ref('')
 const orders = ref([])
@@ -77,18 +78,7 @@ onMounted(() => {
 
 <template>
   <div class="flex min-h-screen flex-col text-ink">
-    <header class="sticky top-0 z-40 border-b border-brand/10 bg-surface/90 backdrop-blur-md">
-      <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:h-16">
-        <a href="#/" class="flex shrink-0 items-center"><Logo :size="26" :text-class="'text-lg font-heading font-bold tracking-tight'" /></a>
-        <nav class="flex items-center gap-3 text-sm font-semibold sm:gap-5">
-          <a href="#/" class="text-ink/60 transition-colors hover:text-brand">Home</a>
-          <a href="#/track" class="flex items-center gap-1.5 text-brand transition-colors hover:text-accent-dark">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-            Track order
-          </a>
-        </nav>
-      </div>
-    </header>
+    <SiteHeader />
 
     <main class="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-10">
       <section class="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent p-5 text-center text-white sm:p-8 md:rounded-[2rem]">
@@ -100,7 +90,7 @@ onMounted(() => {
             <svg class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
             <input v-model="query" type="search" placeholder="e.g. TB-20260912-BA1ACC or 024…" class="w-full rounded-2xl border border-white/15 bg-black/15 py-3 pr-4 pl-10 text-sm font-medium text-white placeholder:text-white/55 focus:border-white/35 focus:outline-none" />
           </div>
-          <button type="submit" class="clay-btn-light shrink-0 rounded-2xl bg-surface px-5 py-3 text-sm font-extrabold text-brand sm:px-6">Track</button>
+          <button type="submit" class="clay-btn-light shrink-0 rounded-2xl bg-surface px-5 py-3 text-sm font-bold text-brand sm:px-6">Track</button>
         </form>
       </section>
 
@@ -115,7 +105,7 @@ onMounted(() => {
           <div class="h-7 w-7 animate-spin rounded-full border-4 border-brand/15 border-t-brand"></div>
         </div>
 
-        <div v-else-if="error" class="clay flex flex-col items-center justify-center rounded-3xl bg-surface py-10 text-center">
+        <div v-else-if="error" class="clay flex flex-col items-center justify-center rounded-3xl border border-brand/10 bg-surface py-10 text-center">
           <p class="font-heading text-base font-bold text-red-600">Look up failed</p>
           <p class="mt-1 text-sm text-muted">{{ error }}</p>
         </div>
@@ -126,20 +116,20 @@ onMounted(() => {
             One of your orders is still in progress — we're auto-refreshing.
           </div>
 
-          <div v-if="!orders.length" class="clay flex flex-col items-center justify-center rounded-3xl bg-surface py-10 text-center">
+          <div v-if="!orders.length" class="clay flex flex-col items-center justify-center rounded-3xl border border-brand/10 bg-surface py-10 text-center">
             <p class="font-heading text-base font-bold text-brand-dark/70">No orders found</p>
             <p class="mt-1 text-sm text-muted">Double-check the reference or phone number.</p>
           </div>
 
           <ul class="space-y-3">
-            <li v-for="order in orders" :key="order.reference" class="clay overflow-hidden rounded-3xl bg-surface">
+            <li v-for="order in orders" :key="order.reference" class="clay overflow-hidden rounded-3xl border border-brand/10 bg-surface">
               <div class="p-4 sm:p-5">
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
                     <p class="font-mono text-[11px] font-bold tracking-wide text-muted">{{ order.reference }}</p>
                     <h3 class="mt-0.5 truncate font-heading text-base font-bold text-brand-dark">{{ order.package }}</h3>
                     <p class="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-muted">
-                      <span class="rounded bg-brand-soft px-1.5 py-0.5 font-extrabold text-brand">{{ order.network }}</span>
+                      <span class="rounded bg-brand-soft px-1.5 py-0.5 font-bold text-brand">{{ order.network }}</span>
                       → {{ order.phone }}
                     </p>
                   </div>
@@ -148,7 +138,7 @@ onMounted(() => {
 
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand/10 pt-3">
                   <div class="flex items-baseline gap-3">
-                    <span class="font-heading text-lg font-black text-brand">{{ currency(order.amount) }}</span>
+                    <span class="font-heading text-lg font-bold text-brand">{{ currency(order.amount) }}</span>
                     <span class="text-[11px] text-muted">{{ new Date(order.created_at).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' }) }}</span>
                   </div>
                   <div class="flex items-center gap-2">
@@ -156,7 +146,7 @@ onMounted(() => {
                       v-if="order.status === 'PENDING_PAYMENT'"
                       type="button"
                       :disabled="resuming[order.reference]"
-                      class="clay-btn-gold rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-extrabold text-white transition disabled:opacity-40"
+                      class="clay-btn-gold rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-bold text-white transition disabled:opacity-40"
                       @click="resumePayment(order)"
                     >
                       {{ resuming[order.reference] ? 'Opening…' : 'Complete payment' }}
@@ -171,7 +161,7 @@ onMounted(() => {
       </section>
 
       <section v-else class="mt-6">
-        <div class="clay flex items-start gap-3 rounded-3xl bg-surface p-5 text-sm text-muted">
+        <div class="clay flex items-start gap-3 rounded-3xl border border-brand/10 bg-surface p-5 text-sm text-muted">
           <svg class="mt-0.5 h-5 w-5 shrink-0 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
           <p>After paying, you'll get an order reference like <b class="text-brand-dark">TB-20260912-BA1ACC</b>. Keep it handy — or look up by your phone number.</p>
         </div>
@@ -179,7 +169,18 @@ onMounted(() => {
     </main>
 
     <footer class="mt-6 shrink-0 border-t border-brand/10 bg-surface">
-      <div class="mx-auto max-w-6xl px-4 py-5 text-center text-[11px] font-medium text-muted/70">© 2026 DataPadi · Instant data bundles in Ghana</div>
+      <div class="mx-auto flex max-w-6xl flex-col items-center gap-1.5 px-4 py-5 text-center text-[11px] font-medium text-muted/70 sm:flex-row sm:justify-between sm:gap-4 sm:text-left">
+        <p>{{ SITE.copyright }}</p>
+        <p>
+          Designed &amp; built by
+          <a
+            :href="SITE.builtBy.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-bold text-brand transition-colors hover:text-accent-dark"
+          >{{ SITE.builtBy.name }} ↗</a>
+        </p>
+      </div>
     </footer>
   </div>
 </template>

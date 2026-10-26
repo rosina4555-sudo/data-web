@@ -154,11 +154,11 @@ onMounted(() => {
 <template>
   <Teleport to="body">
     <div class="fixed inset-0 z-50 flex items-end justify-center bg-brand-dark/45 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" @click.self="close">
-      <div class="clay flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-surface sm:max-w-md sm:rounded-3xl">
+      <div class="clay flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-brand/10 bg-surface sm:max-w-md sm:rounded-3xl">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-brand/10 px-5 py-4">
           <div class="flex items-center gap-2.5">
-            <span class="rounded-full bg-gradient-to-r from-brand to-accent px-2.5 py-1 text-[10px] font-extrabold tracking-widest text-white uppercase">
+            <span class="rounded-full bg-gradient-to-r from-brand to-accent px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
               {{ network.code }}
             </span>
             <h2 class="font-heading text-base font-bold tracking-tight text-brand-dark">{{ pkg.name }}</h2>
@@ -172,8 +172,8 @@ onMounted(() => {
           <div v-if="step === 'form'" class="space-y-4">
             <div class="clay-well flex items-center justify-between rounded-2xl bg-brand-soft px-4 py-3">
               <div>
-                <p class="text-[10px] font-bold tracking-widest text-muted uppercase">To pay</p>
-                <p class="font-heading text-2xl font-black text-brand">{{ currency(amount) }}</p>
+                <p class="text-[10px] font-bold tracking-wider text-muted uppercase">To pay</p>
+                <p class="font-heading text-2xl font-bold text-brand">{{ currency(amount) }}</p>
               </div>
               <svg class="h-8 w-8 text-brand/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none"/></svg>
             </div>
@@ -214,7 +214,7 @@ onMounted(() => {
             <button
               type="button"
               :disabled="!canBuy"
-              class="clay-btn-gold w-full rounded-2xl bg-gradient-to-r from-accent to-accent-dark py-3.5 text-sm font-extrabold tracking-wide text-white transition focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              class="clay-btn-gold w-full rounded-2xl bg-gradient-to-r from-accent to-accent-dark py-3.5 text-sm font-bold tracking-wide text-white transition focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               @click="buy"
             >
               Pay {{ currency(amount) }} securely →
@@ -254,7 +254,7 @@ onMounted(() => {
               <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </div>
             <div>
-              <p class="font-heading text-lg font-black text-brand-dark">Payment received!</p>
+              <p class="font-heading text-lg font-bold text-brand-dark">Payment received!</p>
               <p class="mt-1 text-sm text-muted">We're topping up <b class="text-brand-dark">{{ order?.phone }}</b>. Your data is on its way.</p>
             </div>
             <div class="w-full space-y-2 rounded-2xl bg-bg p-4 text-left">
@@ -274,14 +274,14 @@ onMounted(() => {
             <div class="flex w-full gap-2">
               <button
                 type="button"
-                class="clay-btn-light flex-1 rounded-2xl bg-surface py-3 text-sm font-extrabold text-brand"
+                class="clay-btn-light flex-1 rounded-2xl bg-surface py-3 text-sm font-bold text-brand"
                 @click="emit('track', order?.reference)"
               >
                 Track delivery
               </button>
               <button
                 type="button"
-                class="clay-btn flex-1 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-3 text-sm font-extrabold text-white"
+                class="clay-btn flex-1 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-3 text-sm font-bold text-white"
                 @click="close"
               >
                 Done
@@ -295,19 +295,19 @@ onMounted(() => {
               <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </div>
             <div>
-              <p class="font-heading text-base font-black text-brand-dark">Something went wrong</p>
+              <p class="font-heading text-base font-bold text-brand-dark">Something went wrong</p>
               <p class="mt-1 max-w-[18rem] text-xs leading-relaxed text-muted">{{ error }}</p>
             </div>
             <div class="flex w-full gap-2">
-              <button type="button" class="clay-btn-light flex-1 rounded-2xl bg-surface py-3 text-sm font-extrabold text-brand" @click="retryAfterError">Try again</button>
-              <button type="button" class="clay-btn flex-1 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-3 text-sm font-extrabold text-white" @click="emit('track', order?.reference)">Track order</button>
+              <button type="button" class="clay-btn-light flex-1 rounded-2xl bg-surface py-3 text-sm font-bold text-brand" @click="retryAfterError">Try again</button>
+              <button type="button" class="clay-btn flex-1 rounded-2xl bg-gradient-to-r from-brand to-brand-dark py-3 text-sm font-bold text-white" @click="emit('track', order?.reference)">Track order</button>
             </div>
           </div>
         </div>
 
         <footer class="shrink-0 border-t border-brand/10 px-5 py-3">
           <div class="flex items-center justify-between">
-            <span class="text-[10px] font-bold tracking-widest text-muted/60 uppercase">Powered by</span>
+            <span class="text-[10px] font-bold tracking-wider text-muted/60 uppercase">Powered by</span>
             <Logo :size="18" :text-class="'text-sm font-heading font-bold tracking-tight'" />
           </div>
         </footer>

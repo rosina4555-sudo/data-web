@@ -28,8 +28,14 @@ const LINK_CLASS = 'font-semibold text-brand underline decoration-brand/30 under
 const link = (label, href) => {
   if (!/^(https?:|mailto:|#|\/|\.\/)/i.test(href)) return label
 
+  // A hash target is an anchor inside this document: it must stay in the
+  // current tab (the view scrolls it) rather than open a second copy of the
+  // page whose router would not know the hash.
+  const inPage = href.startsWith('#')
+  const target = inPage ? '' : ' target="_blank" rel="noopener noreferrer"'
+
   return (
-    '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" class="' + LINK_CLASS + '">' +
+    '<a href="' + escapeHtml(href) + '"' + target + ' class="' + LINK_CLASS + '">' +
     label +
     '</a>'
   )
@@ -94,14 +100,28 @@ const tableCells = (line) =>
     .map((cell) => cell.trim())
 
 const H1 = 'mt-2 font-heading text-3xl font-bold tracking-tight text-ink sm:text-4xl'
-const H2 = 'mt-10 scroll-mt-20 border-t border-brand/10 pt-8 font-heading text-xl font-bold text-ink sm:text-2xl'
-const H3 = 'mt-7 scroll-mt-20 font-heading text-base font-bold text-ink sm:text-lg'
+const H2 = 'group mt-10 scroll-mt-24 font-heading text-xl font-bold tracking-tight text-ink sm:text-2xl'
+const H3 = 'mt-7 scroll-mt-24 font-heading text-base font-bold text-ink sm:text-lg'
 const H4 = 'mt-5 font-heading text-sm font-bold text-ink'
 const UL = 'mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-ink/70 marker:text-brand'
 const OL = 'mt-3 list-decimal space-y-2 pl-5 text-sm leading-7 text-ink/70 marker:font-bold marker:text-brand'
 const PARAGRAPH = 'mt-3 text-sm leading-7 text-ink/70'
-const TH = 'border-b border-brand/20 bg-brand/5 px-3 py-2 text-left font-bold text-ink'
-const TD = 'border-b border-brand/10 px-3 py-2 align-top text-ink/70'
+const TH = 'border-b border-brand/15 bg-bg px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-muted'
+const TD = 'border-b border-brand/10 px-3 py-2.5 align-top text-[13px] leading-6 text-ink/70'
+
+/**
+ * Endpoint headings (`### GET /path`) render as a method badge plus the path,
+ * the way a reference page marks an operation. Only the five verbs the
+ * document uses are recognised; anything else stays an ordinary h3.
+ */
+const ENDPOINT_RE = /^(GET|POST|PUT|PATCH|DELETE)\s+(\S+)$/
+const METHOD_BADGE = {
+  GET: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  POST: 'border-amber-200 bg-amber-50 text-amber-700',
+  PUT: 'border-sky-200 bg-sky-50 text-sky-700',
+  PATCH: 'border-sky-200 bg-sky-50 text-sky-700',
+  DELETE: 'border-red-200 bg-red-50 text-red-700',
+}
 
 /**
  * Render a markdown document.
@@ -133,13 +153,14 @@ export const renderMarkdown = (source) => {
       }
       i += 1
       out.push(
-        '<div class="group relative mt-4 overflow-x-auto rounded-xl border border-brand/10 bg-ink/95">' +
-          (language
-            ? '<span class="absolute right-3 top-2 font-mono text-[10px] font-bold tracking-wider text-white/30 uppercase">' +
-              escapeHtml(language) +
-              '</span>'
-            : '') +
-          '<pre class="p-4 pr-14 text-[12.5px] leading-relaxed text-emerald-50/90"><code class="font-mono">' +
+        '<div class="dp-code group relative mt-4 overflow-hidden rounded-xl border border-ink/20 bg-ink/95">' +
+          '<div class="flex items-center justify-between border-b border-white/10 px-4 py-1.5">' +
+            '<span class="font-mono text-[10px] font-bold tracking-wider text-white/40 uppercase">' +
+            (language ? escapeHtml(language) : '') +
+            '</span>' +
+            '<button type="button" data-copy class="rounded px-2 py-0.5 text-[10px] font-semibold text-white/40 transition hover:bg-white/10 hover:text-white/90">Copy</button>' +
+          '</div>' +
+          '<pre class="overflow-x-auto p-4 text-[12.5px] leading-relaxed text-emerald-50/90"><code class="font-mono">' +
           escapeHtml(body.join('\n')) +
           '</code></pre></div>',
       )
@@ -151,9 +172,42 @@ export const renderMarkdown = (source) => {
       const level = hashes.length
       const text = line.slice(level).trim()
       const id = slugify(text, slugs)
-      const classes = level === 1 ? H1 : level === 2 ? H2 : level === 3 ? H3 : H4
-      out.push('<h' + level + ' id="' + id + '" class="' + classes + '">' + inline(text) + '</h' + level + '>')
-      if (level === 2 || level === 3) toc.push({ id, text: plainText(text), level })
+      const plain = plainText(text)
+      const endpoint = level === 3 ? plain.match(ENDPOINT_RE) : null
+
+      if (endpoint) {
+        const verb = endpoint[1]
+        out.push(
+          '<div id="' + id + '" class="dp-endpoint mt-8 flex scroll-mt-24 flex-wrap items-center gap-3 border-b border-brand/15 pb-3">' +
+            '<span class="inline-flex items-center rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold tracking-wider ' +
+            METHOD_BADGE[verb] +
+            '">' +
+            verb +
+            '</span>' +
+            '<code class="font-mono text-sm font-semibold break-all text-ink">' +
+            escapeHtml(endpoint[2]) +
+            '</code>' +
+          '</div>',
+        )
+      } else {
+        const classes = level === 1 ? H1 : level === 2 ? H2 : level === 3 ? H3 : H4
+        // The anchor scrolls in place through the view's click handler: a raw
+        // #hash would be read by the router as an unknown route and drop the
+        // reader on the home page.
+        const anchor =
+          level === 2
+            ? ' <a href="#' +
+              id +
+              '" data-jump="' +
+              id +
+              '" aria-hidden="true" tabindex="-1" class="align-middle text-sm font-medium text-brand/0 transition-colors group-hover:text-brand/50">#</a>'
+            : ''
+        out.push(
+          '<h' + level + ' id="' + id + '" class="' + classes + '">' + inline(text) + anchor + '</h' + level + '>',
+        )
+      }
+
+      if (level === 2 || level === 3) toc.push({ id, text: plain, level })
       i += 1
       continue
     }
@@ -173,8 +227,25 @@ export const renderMarkdown = (source) => {
         i += 1
       }
       const head = header.map((cell) => '<th class="' + TH + '">' + inline(cell) + '</th>').join('')
+      // The document's tables all lead with a code value (scope, bucket,
+      // status, slug), so the first cell is set in mono to read as data.
       const body = rows
-        .map((cells) => '<tr>' + cells.map((cell) => '<td class="' + TD + '">' + inline(cell) + '</td>').join('') + '</tr>')
+        .map(
+          (cells) =>
+            '<tr>' +
+            cells
+              .map(
+                (cell, index) =>
+                  '<td class="' +
+                  TD +
+                  (index === 0 ? ' font-mono text-[12.5px] font-medium text-ink' : '') +
+                  '">' +
+                  inline(cell) +
+                  '</td>',
+              )
+              .join('') +
+            '</tr>',
+        )
         .join('')
       out.push(
         '<div class="mt-4 overflow-x-auto rounded-xl border border-brand/10 bg-surface">' +

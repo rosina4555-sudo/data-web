@@ -11,6 +11,11 @@ export const SITE = {
   supportPhone: '+233 55 637 3440',
   copyright: '© 2026 DataPadi · Instant data bundles in Ghana',
   networksServed: 'MTN · AirtelTigo · Telecel',
+  /** Portfolio credit shown in the public footers. */
+  builtBy: {
+    name: 'Comfibo',
+    url: 'https://comfibo.onrender.com',
+  },
 }
 
 /** Per-network accent (cap / chip colours) — fallback gradient used otherwise. */

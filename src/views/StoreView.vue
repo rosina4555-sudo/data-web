@@ -65,9 +65,10 @@ const copyShopLink = async () => {
             :href="publicHref"
             target="_blank"
             rel="noopener"
-            class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:flex"
+            class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-brand transition hover:bg-brand-soft sm:gap-1.5 sm:px-2.5"
           >
-            View shop ↗
+            <span class="sm:hidden">Shop ↗</span>
+            <span class="hidden sm:inline">View shop ↗</span>
           </a>
           <button
             type="button"

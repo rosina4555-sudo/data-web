@@ -11,7 +11,7 @@ import { ref, computed, watch } from 'vue'
 import { storefrontApi } from '../services/storeApi'
 import { currency, NETWORK_DOT } from '../utils/format'
 import { toast } from '../services/toast'
-import PackageCard from '../components/PackageCard.vue'
+import PackageCarousel from '../components/PackageCarousel.vue'
 import CheckoutModal from '../components/CheckoutModal.vue'
 import Logo from '../components/Logo.vue'
 import StoreHeader from '../components/store/StoreHeader.vue'
@@ -26,6 +26,15 @@ const loading = ref(true)
 const error = ref('')
 const checkout = ref(null)
 
+// PackageCard was built for the retail catalog, so the shop's own shape is
+// translated here rather than forking the card.
+const toCard = (row) => ({
+  id: row.package_id,
+  name: row.name,
+  sell_price: Number(row.price_minor || 0) / 100,
+  size_label: row.size_label,
+})
+
 const networks = computed(() => {
   const groups = new Map()
 
@@ -37,7 +46,12 @@ const networks = computed(() => {
     groups.get(code).packages.push(row)
   }
 
-  return [...groups.values()]
+  // Cards are precomputed so the carousel receives the same shape the
+  // marketplace grid does.
+  return [...groups.values()].map((group) => ({
+    ...group,
+    cards: group.packages.map(toCard),
+  }))
 })
 
 const bundleCount = computed(() => catalog.value.length)
@@ -77,16 +91,9 @@ const load = async () => {
 
 watch(() => props.slug, load, { immediate: true })
 
-// PackageCard was built for the retail catalog, so the shop's own shape is
-// translated here rather than forking the card.
-const toCard = (row) => ({
-  id: row.package_id,
-  name: row.name,
-  sell_price: Number(row.price_minor || 0) / 100,
-  size_label: row.size_label,
-})
-
-const openCheckout = (row, network) => {
+const openCheckout = (pkg, network) => {
+  const row = catalog.value.find((item) => item.package_id === pkg.id)
+  if (!row) return
   checkout.value = {
     network: { code: network.code, name: network.name },
     pkg: { ...toCard(row), name: row.name },
@@ -217,13 +224,11 @@ const share = async () => {
               <span class="text-[11px] font-semibold text-muted">{{ network.packages.length }} bundle{{ network.packages.length === 1 ? '' : 's' }}</span>
             </div>
 
-            <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <PackageCard
-                v-for="row in network.packages"
-                :key="row.package_id"
+            <div class="mt-3">
+              <PackageCarousel
+                :packages="network.cards"
                 :network="{ code: network.code, name: network.name }"
-                :pkg="toCard(row)"
-                @buy="openCheckout(row, network)"
+                @buy="(pkg) => openCheckout(pkg, network)"
               />
             </div>
           </div>

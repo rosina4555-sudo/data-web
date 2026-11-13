@@ -58,9 +58,10 @@ const trackHref = computed(() => `#/track?store=${encodeURIComponent(props.slug)
           :href="whatsappLink"
           target="_blank"
           rel="noopener"
-          class="clay-btn hidden rounded-xl bg-gradient-to-r from-brand to-brand-dark px-3 py-2 text-xs font-bold text-white sm:inline-block"
+          class="clay-btn inline-flex items-center rounded-xl bg-gradient-to-r from-brand to-brand-dark px-2.5 py-2 text-xs font-bold text-white sm:px-3"
         >
-          Chat on WhatsApp
+          <span class="sm:hidden">WhatsApp</span>
+          <span class="hidden sm:inline">Chat on WhatsApp</span>
         </a>
       </nav>
     </div>

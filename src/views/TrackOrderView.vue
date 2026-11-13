@@ -6,6 +6,8 @@ import { currency, isActivePayment } from '../utils/format'
 import { toast } from '../services/toast'
 import StatusPill from '../components/StatusPill.vue'
 import SiteHeader from '../components/SiteHeader.vue'
+import StoreHeader from '../components/store/StoreHeader.vue'
+import { storefrontApi } from '../services/storeApi'
 import { SITE } from '../site'
 
 const query = ref('')
@@ -14,6 +16,12 @@ const loading = ref(false)
 const searched = ref(false)
 const error = ref('')
 const resuming = ref({})
+
+// Arriving from a shop keeps that shop's identity on the page: the header, and
+// its way back to the catalog, stay the shop's rather than the marketplace's.
+const storeSlug = ref('')
+const storeName = ref('')
+const storeWhatsapp = ref('')
 
 let pollTimer = null
 let lastQuery = ''
@@ -68,9 +76,28 @@ const resumePayment = async (order) => {
 }
 
 onMounted(() => {
-  const m = window.location.hash.match(/\?ref=([^&]+)/)
-  if (m) {
-    query.value = decodeURIComponent(m[1])
+  const raw = window.location.hash || ''
+  const qIndex = raw.indexOf('?')
+  const params = new URLSearchParams(qIndex === -1 ? '' : raw.slice(qIndex + 1))
+
+  storeSlug.value = params.get('store') || ''
+  if (storeSlug.value) {
+    // The shop bar is decoration: if the profile cannot be fetched, tracking
+    // still works and simply shows the standard header.
+    storefrontApi
+      .get(storeSlug.value)
+      .then((res) => {
+        storeName.value = res?.store?.name || ''
+        storeWhatsapp.value = res?.store?.whatsapp || ''
+      })
+      .catch(() => {
+        storeSlug.value = ''
+      })
+  }
+
+  const reference = params.get('ref')
+  if (reference) {
+    query.value = reference
     runLookup(query.value)
   }
 })
@@ -78,7 +105,13 @@ onMounted(() => {
 
 <template>
   <div class="flex min-h-screen flex-col text-ink">
-    <SiteHeader />
+    <StoreHeader
+      v-if="storeSlug"
+      :slug="storeSlug"
+      :name="storeName"
+      :whatsapp="storeWhatsapp"
+    />
+    <SiteHeader v-else />
 
     <main class="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:py-10">
       <section class="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-brand-dark via-brand to-accent p-5 text-center text-white sm:p-8 md:rounded-[2rem]">

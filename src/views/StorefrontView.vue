@@ -14,6 +14,7 @@ import { toast } from '../services/toast'
 import PackageCard from '../components/PackageCard.vue'
 import CheckoutModal from '../components/CheckoutModal.vue'
 import Logo from '../components/Logo.vue'
+import StoreHeader from '../components/store/StoreHeader.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
@@ -47,16 +48,14 @@ const fromPrice = computed(() => {
 
 // The shop is the brand here, so the header carries the store's own name and
 // initials rather than the platform logo and its marketplace links.
-const initials = computed(() => {
-  const words = String(store.value?.name || '').trim().split(/\s+/).filter(Boolean)
-  if (!words.length) return 'S'
-  return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('')
-})
-
 const whatsappLink = computed(() => {
   const digits = String(store.value?.whatsapp || '').replace(/\D/g, '')
   return digits ? `https://wa.me/${digits}` : ''
 })
+
+// Tracking links keep the shop in the URL so the tracking page can wear the
+// same header instead of the marketplace one.
+const trackHref = computed(() => `#/track?store=${encodeURIComponent(props.slug)}`)
 
 const load = async () => {
   loading.value = true
@@ -106,7 +105,10 @@ const createStoreOrder = (phone, key) =>
 
 const goTrack = (ref = '') => {
   closeCheckout()
-  window.location.hash = ref ? `#/track?ref=${encodeURIComponent(ref)}` : '#/track'
+  const store = `store=${encodeURIComponent(props.slug)}`
+  window.location.hash = ref
+    ? `#/track?${store}&ref=${encodeURIComponent(ref)}`
+    : `#/track?${store}`
 }
 
 const share = async () => {
@@ -127,43 +129,8 @@ const share = async () => {
 
 <template>
   <div class="flex min-h-screen flex-col text-ink">
-    <!-- Store-branded header. A shopper who followed a shop link should see
-         that shop, not the marketplace's navigation: no Home, API docs or
-         seller portals compete with the store here. -->
-    <header class="sticky top-0 z-40 border-b border-brand/10 bg-surface/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        <a :href="`#/s/${slug}`" class="flex min-w-0 items-center gap-2.5" :aria-label="store?.name || 'Shop'"
-        >
-          <span class="clay-sm flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-brand-dark font-heading text-sm font-extrabold text-white">
-            {{ initials }}
-          </span>
-          <span class="min-w-0">
-            <span class="block truncate font-heading text-sm font-bold tracking-tight text-brand-dark sm:text-base">
-              {{ store?.name || 'Shop' }}
-            </span>
-            <span class="flex items-center gap-1 text-[10px] font-semibold text-muted/70">
-              <svg class="h-3 w-3 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              Verified shop on DataPadi
-            </span>
-          </span>
-        </a>
-
-        <nav class="flex shrink-0 items-center gap-1">
-          <a href="#/track" class="rounded-lg px-2.5 py-2 text-xs font-bold text-brand transition hover:bg-brand-soft">
-            Track order
-          </a>
-          <a
-            v-if="whatsappLink"
-            :href="whatsappLink"
-            target="_blank"
-            rel="noopener"
-            class="clay-btn hidden rounded-xl bg-gradient-to-r from-brand to-brand-dark px-3 py-2 text-xs font-bold text-white sm:inline-block"
-          >
-            Chat on WhatsApp
-          </a>
-        </nav>
-      </div>
-    </header>
+    <!-- Store-branded header, shared with the tracking page. -->
+    <StoreHeader :slug="slug" :name="store?.name || ''" :whatsapp="store?.whatsapp || ''" />
 
     <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:py-8">
       <div v-if="loading" class="flex items-center justify-center py-24">
@@ -275,7 +242,7 @@ const share = async () => {
           </div>
           <p class="mt-2 text-[11px] text-muted/70">
             Problems with an order? Use
-            <a href="#/track" class="font-semibold text-brand hover:underline">Track order</a>
+            <a :href="trackHref" class="font-semibold text-brand hover:underline">Track order</a>
             with the reference from your receipt.
           </p>
         </footer>

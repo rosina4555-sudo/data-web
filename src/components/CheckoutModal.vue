@@ -11,6 +11,11 @@ import Logo from './Logo.vue'
 const props = defineProps({
   network: { type: Object, required: true },
   pkg: { type: Object, required: true },
+  // A storefront creates its order through a different endpoint (and with the
+  // store's price) but everything after that — payment, polling, receipts — is
+  // identical, so the shop passes its own creator instead of duplicating this
+  // modal. Receives (phone, idempotencyKey) and resolves like api.createOrder.
+  createOrder: { type: Function, default: null },
 })
 const emit = defineEmits(['close', 'track'])
 
@@ -103,7 +108,9 @@ const buy = async () => {
 
   try {
     step.value = 'paying'
-    const created = await api.createOrder(props.pkg.id, normalizePhone(phone.value), key)
+    const created = props.createOrder
+      ? await props.createOrder(normalizePhone(phone.value), key)
+      : await api.createOrder(props.pkg.id, normalizePhone(phone.value), key)
     order.value = created.order || created
     const ref = order.value.reference
 

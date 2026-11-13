@@ -5,6 +5,10 @@
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
+// Long enough for a slow catalog query, short enough that a wedged request
+// does not become a permanent spinner.
+const REQUEST_TIMEOUT_MS = 20000
+
 const TOKEN_KEY = 'dp_token'
 const ADMIN_KEY = 'dp_admin'
 
@@ -36,6 +40,47 @@ export function isAuthenticated() {
   return !!getToken()
 }
 
+/**
+ * Human wording for a failed call.
+ *
+ * Status codes belong in logs, not in front of a shop owner or an operator:
+ * "Request failed (404)" says nothing they can act on. Callers that genuinely
+ * branch on the cause read `error.status`, which every failure carries.
+ */
+const MACHINE_CODES = new Set([
+  'not_found',
+  'forbidden',
+  'unauthorized',
+  'rate_limited',
+  'validation_failed',
+  'internal_error',
+  'server_error',
+  'order_state',
+  'not_sellable',
+  '429',
+])
+
+function failureMessage(status, msg) {
+  if (msg && !MACHINE_CODES.has(msg) && !/^[a-z0-9_]+$/.test(msg)) return msg
+  if (status === 404) return 'We could not find that on the server. This part of the service may not be switched on yet.'
+  if (status === 403) return 'You do not have permission to do that.'
+  if (status === 409) return 'That changed while you were working on it. Refresh and try again.'
+  if (status === 422) return 'Please check the details and try again.'
+  if (status === 429) return 'Too many requests. Please wait a moment and try again.'
+  if (status >= 500) return 'The server ran into a problem. Please try again in a moment.'
+  return 'That did not go through. Please try again.'
+}
+
+/**
+ * @param {number} status
+ * @param {string} message
+ */
+function httpError(status, message) {
+  const error = new Error(message)
+  error.status = status
+  return error
+}
+
 /* ── Fetch wrapper ──────────────────────────────────── */
 /**
  * Exported so the partner console can share this wrapper — and therefore its
@@ -53,13 +98,19 @@ export async function request(method, path, body = null, options = {}) {
   const token = getToken(tokenKey)
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const config = { method, headers }
+  // A request that never settles leaves the screen spinning forever with no
+  // way back, which is exactly how a slow server gets reported as "nothing
+  // happens". Bound the wait so the panel can show a retry instead.
+  const config = { method, headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) }
   if (body && method !== 'GET') config.body = JSON.stringify(body)
 
   let res
   try {
     res = await fetch(`${API_BASE}${path}`, config)
-  } catch {
+  } catch (err) {
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      throw new Error('The server is taking too long to answer. Please try again.')
+    }
     throw new Error('Cannot reach the server. Please check your connection.')
   }
 
@@ -119,7 +170,7 @@ export async function request(method, path, body = null, options = {}) {
     // network. Saying "check your connection" there sends people to their
     // router for a fault on our side — report what actually happened.
     if (res.status >= 500 && !msg && !data?.error) {
-      throw new Error(`The server ran into a problem (${res.status}). Please try again in a moment.`)
+      throw httpError(res.status, 'The server ran into a problem. Please try again in a moment.')
     }
     // Field errors arrive as { errors: { field: message } } under a plain
     // "Validation failed" message from several controllers, not only under the
@@ -128,10 +179,19 @@ export async function request(method, path, body = null, options = {}) {
       const errs = data?.errors
       if (errs && typeof errs === 'object') {
         const first = Object.entries(errs)[0]
-        throw new Error(first ? `${first[0]}: ${first[1]}` : 'Please check the highlighted fields.')
+        if (first) {
+          // Field keys are snake_case identifiers; turn them into the words a
+          // person would use ("payout_account_number" → "Payout account number")
+          // instead of leaking the request shape into the message.
+          const label = first[0]
+            .replace(/_/g, ' ')
+            .replace(/^./, (c) => c.toUpperCase())
+          throw new Error(`${label}: ${first[1]}`)
+        }
+        throw new Error('Please check the details and try again.')
       }
     }
-    throw new Error(msg || data?.error || `Request failed (${res.status}).`)
+    throw httpError(res.status, failureMessage(res.status, msg || data?.error))
   }
 
   return data
@@ -236,6 +296,27 @@ export const adminApi = {
     return request('GET', `/v1/admin/refunds/history${qs ? '?' + qs : ''}`)
   },
   cancelRefund: (id) => request('POST', `/v1/admin/refunds/${id}/cancel`),
+
+  // Storefronts. Behind the separate can_manage_stores permission: these
+  // endpoints read shop money and one of them sends payouts, so a plain admin
+  // token is not enough (the API answers 403 and the console explains why).
+  getStores: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/stores${qs ? '?' + qs : ''}`)
+  },
+  getStore: (id) => request('GET', `/v1/admin/stores/${id}`),
+  updateStore: (id, data) => request('PUT', `/v1/admin/stores/${id}`, data),
+  getStoreBasePrices: () => request('GET', '/v1/admin/store-base-prices'),
+  setStoreBasePrice: (packageId, data) =>
+    request('PUT', `/v1/admin/store-base-prices/${packageId}`, data),
+  getStoreWithdrawals: (params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request('GET', `/v1/admin/store-withdrawals${qs ? '?' + qs : ''}`)
+  },
+  approveStoreWithdrawal: (id) => request('POST', `/v1/admin/store-withdrawals/${id}/approve`),
+  rejectStoreWithdrawal: (id, reason = '') =>
+    request('POST', `/v1/admin/store-withdrawals/${id}/reject`, { reason }),
+  retryStoreWithdrawal: (id) => request('POST', `/v1/admin/store-withdrawals/${id}/retry`),
 
   // Webhook events
   getWebhookEvents: (params = {}) => {

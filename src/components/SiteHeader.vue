@@ -21,6 +21,7 @@ const NAV_LINKS = [
 // lives in the page footer instead.
 const PORTALS = [
   { href: '#/partners', label: 'Dealer console', sub: 'Sell data with us', icon: 'partner', primary: true },
+  { href: '#/stores', label: 'Sell data', sub: 'Run your own shop', icon: 'store' },
 ]
 
 /* Stroke-based glyphs (lucide-style) — injected into <svg> as trusted static markup. */
@@ -32,6 +33,7 @@ const ICON_PATHS = {
   track: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>',
   docs: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   partner: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  store: '<path d="m2 7 2.5-4h15L22 7"/><path d="M2 7h20v3a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M4 11.5V21h16v-9.5"/><path d="M9 21v-5h6v5"/>',
 }
 
 /* Per-link icon tile gradients so each mobile row reads at a glance. */
@@ -40,6 +42,7 @@ const TILE = {
   track: 'from-accent to-accent-dark',
   docs: 'from-sky-400 to-indigo-500',
   partner: 'from-accent to-accent-dark',
+  store: 'from-sky-400 to-indigo-500',
 }
 
 const isActive = (href) => {
@@ -115,6 +118,7 @@ onUnmounted(() => {
 
       <div class="hidden items-center gap-2.5 md:flex">
         <span class="h-5 w-px bg-brand/10" aria-hidden="true"></span>
+        <a href="#/stores" class="rounded-xl px-2.5 py-2 text-xs font-bold text-brand transition hover:bg-brand-soft">Sell data</a>
         <a href="#/partners" class="clay-btn rounded-xl bg-gradient-to-r from-accent to-accent-dark px-3.5 py-2 text-xs font-bold text-white">Dealer console</a>
       </div>
 

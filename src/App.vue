@@ -8,10 +8,14 @@ import AdminView from './views/AdminView.vue'
 import PartnersLogin from './views/PartnersLogin.vue'
 import PartnersView from './views/PartnersView.vue'
 import TenantView from './views/TenantView.vue'
+import StorefrontView from './views/StorefrontView.vue'
+import StoreLogin from './views/StoreLogin.vue'
+import StoreView from './views/StoreView.vue'
 import ToastHost from './components/ToastHost.vue'
 import { isAuthenticated } from './services/auth'
 import { partnerIsAuthenticated } from './services/partnerApi'
 import { tenantIsAuthenticated } from './services/tenantApi'
+import { storeIsAuthenticated } from './services/storeApi'
 
 // There is one partner-console URL. Everything people half-remember — the
 // missing "s", the separate dashboard route this used to have, plain
@@ -26,6 +30,14 @@ const ALIASES = [
 
 const readHash = () => {
   const raw = window.location.hash || '#/'
+  // A storefront's public address is a shop name, not a page id:
+  // #/s/ama-data. The longer spelling is kept working so a link that was
+  // shared before the rename does not 404.
+  if (raw.startsWith('#/store/')) {
+    const renamed = '#/s/' + raw.slice('#/store/'.length)
+    window.location.hash = renamed
+    return renamed
+  }
   const hit = ALIASES.find(([from]) => raw === from || raw.startsWith(`${from}/`))
   if (hit) {
     window.location.hash = hit[1]
@@ -38,6 +50,7 @@ const hash = ref(readHash())
 const authed = ref(false)
 const partnerAuthed = ref(false)
 const tenantAuthed = ref(false)
+const storeAuthed = ref(false)
 const ready = ref(false)
 
 // The admin console and the partner console keep separate tokens, and the
@@ -63,6 +76,11 @@ const syncSession = async () => {
     if (!partnerAuthed.value) {
       tenantAuthed.value = await tenantIsAuthenticated()
     }
+  }
+  // The public storefront (#/s/{slug}) needs no session check at all — that is
+  // the point of it. Only the seller console behind #/stores does.
+  if (hash.value.startsWith('#/stores') && !storeAuthed.value) {
+    storeAuthed.value = await storeIsAuthenticated()
   }
 }
 
@@ -93,6 +111,15 @@ const isDashboard = computed(() => isAdminHub.value && authed.value)
 // explicit so the ordering intent survives a future rename.
 const isPartnersHub = computed(() => hash.value.startsWith('#/partners'))
 
+// The public shop and the seller console are separate destinations with
+// separate sessions. Public first: '#/s/...' must never be mistaken for a hub.
+const storefrontMatch = computed(() => hash.value.match(/^#\/s\/([^/?#]+)/))
+const isStorefront = computed(() => !!storefrontMatch.value)
+const storefrontSlug = computed(() => storefrontMatch.value?.[1] || '')
+const isStoresHub = computed(() => hash.value.startsWith('#/stores'))
+const isStoresLogin = computed(() => isStoresHub.value && !storeAuthed.value)
+const isStoresDashboard = computed(() => isStoresHub.value && storeAuthed.value)
+
 // One door, two destinations behind it. The credentials decide which: a staff
 // session renders the operator console, a partner's own session renders their
 // dashboard, and with neither the shared sign-in form is what shows.
@@ -112,7 +139,9 @@ const knownHash = computed(
     isTrack.value ||
     isDocs.value ||
     isAdminHub.value ||
-    isPartnersHub.value,
+    isPartnersHub.value ||
+    isStoresHub.value ||
+    isStorefront.value,
 )
 
 const onAuthenticated = () => {
@@ -126,6 +155,9 @@ const onPartnerAuthenticated = () => {
 }
 const onTenantAuthenticated = () => {
   tenantAuthed.value = true
+}
+const onStoreAuthenticated = () => {
+  storeAuthed.value = true
 }
 </script>
 
@@ -145,6 +177,9 @@ const onTenantAuthenticated = () => {
     <HomeView v-if="isHome || !knownHash" />
     <TrackOrderView v-else-if="isTrack" />
     <DocsView v-else-if="isDocs" />
+    <StorefrontView v-else-if="isStorefront" :slug="storefrontSlug" />
+    <StoreLogin v-else-if="isStoresLogin" @authenticated="onStoreAuthenticated" />
+    <StoreView v-else-if="isStoresDashboard" />
     <AdminLogin v-else-if="isLogin" @authenticated="onAuthenticated" />
     <AdminView v-else-if="isDashboard" @logout="onLogout" />
     <PartnersLogin

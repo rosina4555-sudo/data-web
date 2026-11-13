@@ -192,3 +192,26 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Announcement modal — a quiet fade and lift rather than a bounce */
+.dp-modal-enter-active,
+.dp-modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+.dp-modal-enter-from,
+.dp-modal-leave-to {
+  opacity: 0;
+}
+.dp-modal-enter-active .dp-modal-panel {
+  animation: dp-modal-in 0.24s ease-out both;
+}
+@keyframes dp-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

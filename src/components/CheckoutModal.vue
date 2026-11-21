@@ -7,6 +7,7 @@ import { isValidGhanaPhone, networkForPrefix, normalizePhone, phoneHint } from '
 import { toast } from '../services/toast'
 import StatusPill from './StatusPill.vue'
 import Logo from './Logo.vue'
+import { SITE_CLOSED, CLOSURE } from '../services/closure'
 
 const props = defineProps({
   network: { type: Object, required: true },
@@ -34,7 +35,12 @@ const networkGood = computed(() => {
 })
 
 const phoneValid = computed(() => isValidGhanaPhone(normalizePhone(phone.value)))
-const canBuy = computed(() => phoneValid.value && ['form'].includes(step.value))
+// Last line of defence for the closure: even if this modal is somehow open
+// (an old tab, a console path), no order may be created from it.
+const paused = SITE_CLOSED
+const canBuy = computed(
+  () => !paused && phoneValid.value && ['form'].includes(step.value),
+)
 const networkMatchHint = computed(() => {
   if (!phoneHint(phone.value) || !networkForPrefix(phoneHint(phone.value))) return null
   const net = networkForPrefix(phoneHint(phone.value))
@@ -102,6 +108,11 @@ const pollUntilSettled = async () => {
 }
 
 const buy = async () => {
+  if (paused) {
+    toast(CLOSURE.title, 'info')
+    return
+  }
+
   if (!canBuy.value) return
   error.value = ''
   const key = idempotencyKey()
@@ -175,8 +186,23 @@ onMounted(() => {
 
         <!-- Body -->
         <div class="hide-scrollbar flex-1 overflow-y-auto px-5 py-4">
+          <!-- STEP: closed — the shop is paused, so there is nothing to buy -->
+          <div v-if="paused" class="space-y-3 py-4 text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-dark">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3.5" y="10" width="17" height="11" rx="2.5" />
+                <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10" />
+              </svg>
+            </div>
+            <p class="font-heading text-base font-bold text-brand-dark">{{ CLOSURE.title }}</p>
+            <p class="mx-auto max-w-[18rem] text-xs leading-relaxed text-muted">{{ CLOSURE.body }}</p>
+            <a href="#/track" class="inline-block text-xs font-bold text-brand hover:underline" @click="close">
+              {{ CLOSURE.trackingLabel }} →
+            </a>
+          </div>
+
           <!-- STEP: form -->
-          <div v-if="step === 'form'" class="space-y-4">
+          <div v-else-if="step === 'form'" class="space-y-4">
             <div class="clay-well flex items-center justify-between rounded-2xl bg-brand-soft px-4 py-3">
               <div>
                 <p class="text-[10px] font-bold tracking-wider text-muted uppercase">To pay</p>

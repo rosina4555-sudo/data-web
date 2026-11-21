@@ -19,6 +19,7 @@ import { money, newIdempotencyKey } from '../../utils/partners'
 import { currency } from '../../utils/format'
 import { isValidGhanaPhone, normalizePhone, networkForPrefix } from '../../utils/phone'
 import LoadError from '../LoadError.vue'
+import { SITE_CLOSED, CLOSURE } from '../../services/closure'
 
 const networks = ref([])
 const activeNetwork = ref(null)
@@ -47,8 +48,12 @@ const shortByMinor = computed(() =>
   availableMinor.value === null ? 0 : Math.max(0, selectedMinor.value - availableMinor.value),
 )
 
+// Purchases are paused for as long as the shop is closed, dealers included.
+const paused = SITE_CLOSED
+
 const canBuy = computed(
   () =>
+    !paused &&
     selected.value &&
     isValidGhanaPhone(phone.value.trim()) &&
     !purchasing.value &&
@@ -98,6 +103,11 @@ const pick = (pkg) => {
 }
 
 const buy = async () => {
+  if (paused) {
+    toast(CLOSURE.title, 'info')
+    return
+  }
+
   if (!canBuy.value) {
     if (!isValidGhanaPhone(phone.value.trim())) toast('Enter a valid Ghanaian number', 'error')
     else if (shortByMinor.value > 0) toast('Your available balance is short for this package', 'error')
@@ -151,6 +161,11 @@ onMounted(loadNetworks)
           balance {{ money(wallet.balance_minor) }} · reserve {{ money(wallet.min_balance_minor) }}
         </p>
       </div>
+    </div>
+
+    <div v-if="paused" class="clay rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+      <p class="font-heading text-sm font-bold text-amber-900">{{ CLOSURE.title }}</p>
+      <p class="mt-1 text-xs leading-relaxed text-amber-800">{{ CLOSURE.body }}</p>
     </div>
 
     <LoadError :error="error" :busy="loading || loadingPackages" @retry="loadNetworks" />

@@ -11,7 +11,9 @@ import TenantView from './views/TenantView.vue'
 import StorefrontView from './views/StorefrontView.vue'
 import StoreLogin from './views/StoreLogin.vue'
 import StoreView from './views/StoreView.vue'
+import ClosedView from './views/ClosedView.vue'
 import ToastHost from './components/ToastHost.vue'
+import { closureBlocks } from './services/closure'
 import { isAuthenticated } from './services/auth'
 import { partnerIsAuthenticated } from './services/partnerApi'
 import { tenantIsAuthenticated } from './services/tenantApi'
@@ -67,7 +69,18 @@ const ready = ref(false)
 // Only the hub that is being entered is checked, and only when it has not been
 // checked already: the server round trip belongs at the door, not on every
 // hash change.
+// The temporary-closure layer sits in front of every public page. It is a
+// render guard rather than a redirect: a bookmarked shop or bundle link shows
+// the notice at the address the visitor actually opened, and no public view is
+// mounted, so no catalogue request or checkout can happen from it.
+const closureBlocked = computed(() => closureBlocks(hash.value))
+
 const syncSession = async () => {
+  // Nothing on an allowed console route is behind the closure, and nothing the
+  // closure replaces carries a session — so while the shop is shut, skip the
+  // round trips entirely.
+  if (closureBlocked.value) return
+
   if (hash.value.startsWith('#/admin') && !authed.value) {
     authed.value = await isAuthenticated()
   }
@@ -174,7 +187,8 @@ const onStoreAuthenticated = () => {
   </div>
 
   <template v-else>
-    <HomeView v-if="isHome || !knownHash" />
+    <ClosedView v-if="closureBlocked" />
+    <HomeView v-else-if="isHome || !knownHash" />
     <TrackOrderView v-else-if="isTrack" />
     <DocsView v-else-if="isDocs" />
     <StorefrontView v-else-if="isStorefront" :slug="storefrontSlug" />
